@@ -12,9 +12,7 @@ node_modules
 server/node_modules
 
 # Build output
-dist
 dist-ssr
-server/public
 
 # Environment files
 .env

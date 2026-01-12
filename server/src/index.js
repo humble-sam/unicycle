@@ -84,7 +84,7 @@ app.use('/api/*', (req, res) => {
 
 // Serve static files from React build in production
 if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, '../public');
+  const buildPath = path.join(__dirname, '../../dist');
   
   // Serve static assets (JS, CSS, images, etc.)
   app.use(express.static(buildPath));

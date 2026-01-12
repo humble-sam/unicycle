@@ -1,12 +1,13 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "unicycle",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && cd server && npm install --production",
     "build:dev": "vite build --mode development",
+    "start": "cd server && node src/index.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },

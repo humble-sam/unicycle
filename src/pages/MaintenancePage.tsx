@@ -8,7 +8,7 @@ const MaintenancePage = () => {
     // Try to fetch the maintenance message from API
     const fetchMessage = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/admin/settings/public/status`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api')}/admin/settings/public/status`);
         if (response.ok) {
           const data = await response.json();
           if (data.maintenance_message) {

@@ -51,7 +51,7 @@ const MaintenanceCheck = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/admin/settings/public/status`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api')}/admin/settings/public/status`);
         if (response.ok) {
           const data = await response.json();
           setMaintenanceMode(data.maintenance_mode === true);

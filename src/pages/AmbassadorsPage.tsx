@@ -27,7 +27,7 @@ import { toast } from "sonner";
 import { authApi } from "@/lib/api";
 import { Link } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
 // College list (same as AuthPage)
 const colleges = [

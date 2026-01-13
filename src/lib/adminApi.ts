@@ -1,5 +1,5 @@
 // Admin API Client - Separate from user API
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
 // Admin token management (separate from user tokens)
 const getAdminToken = (): string | null => {

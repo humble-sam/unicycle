@@ -152,7 +152,7 @@ const AuthPage = () => {
   useEffect(() => {
     const checkFeatures = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/admin/settings/public/status`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api')}/admin/settings/public/status`);
         if (response.ok) {
           const data = await response.json();
           setRegistrationEnabled(data.registration_enabled !== false);

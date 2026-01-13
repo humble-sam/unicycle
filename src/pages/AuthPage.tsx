@@ -278,7 +278,7 @@ const AuthPage = () => {
 
           {/* Form */}
           <div className="bg-card rounded-2xl border border-border p-6 md:p-8 shadow-lg">
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
               {!isLogin && (
                 <>
                   {/* Full Name */}

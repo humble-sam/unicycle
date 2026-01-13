@@ -92,6 +92,39 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// DEBUG: Test if we can access an asset file directly
+app.get('/api/test-asset', (req, res) => {
+  const fs = require('fs');
+  const buildPath = path.join(process.cwd(), 'dist');
+  const assetPath = path.join(buildPath, 'assets', 'index-DmTW-UjC.js');
+  
+  try {
+    if (fs.existsSync(assetPath)) {
+      const stats = fs.statSync(assetPath);
+      res.json({
+        success: true,
+        path: assetPath,
+        exists: true,
+        size: stats.size,
+        message: 'Asset file exists and is readable'
+      });
+    } else {
+      res.json({
+        success: false,
+        path: assetPath,
+        exists: false,
+        message: 'Asset file not found'
+      });
+    }
+  } catch (e) {
+    res.json({
+      success: false,
+      error: e.message,
+      path: assetPath
+    });
+  }
+});
+
 // DEBUG: Test static file serving
 app.get('/api/debug-static', (req, res) => {
   const fs = require('fs');
@@ -259,15 +292,11 @@ if (process.env.NODE_ENV === 'production') {
   
   // Handle React Router - serve index.html for all non-API routes
   // This must be LAST, after all other routes
-  app.get('*', (req, res, next) => {
+  // express.static above will handle /assets/ requests before this route
+  app.get('*', (req, res) => {
     // Don't serve index.html for API routes
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Endpoint not found' });
-    }
-    
-    // Don't serve index.html for static assets (they should be handled by express.static above)
-    if (req.path.startsWith('/assets/') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
-      return res.status(404).send('Asset not found');
     }
     
     const indexPath = path.join(buildPath, 'index.html');

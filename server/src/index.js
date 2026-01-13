@@ -92,6 +92,40 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// DEBUG: Check file paths (REMOVE AFTER DEBUGGING)
+app.get('/api/debug-paths', (req, res) => {
+  const fs = require('fs');
+  const possiblePaths = [
+    path.join(__dirname, '../public'),
+    path.join(__dirname, '../../dist'),
+    path.join(process.cwd(), 'dist'),
+    path.join(process.cwd(), 'server/public'),
+    path.join(process.cwd(), 'public'),
+    process.cwd()
+  ];
+  
+  const results = {};
+  possiblePaths.forEach(p => {
+    try {
+      const exists = fs.existsSync(p);
+      const hasIndex = exists && fs.existsSync(path.join(p, 'index.html'));
+      const files = exists ? fs.readdirSync(p).slice(0, 10) : [];
+      results[p] = { exists, hasIndex, files };
+    } catch (e) {
+      results[p] = { error: e.message };
+    }
+  });
+  
+  // Also check root directory contents
+  try {
+    results['cwd_contents'] = fs.readdirSync(process.cwd());
+  } catch (e) {
+    results['cwd_contents'] = { error: e.message };
+  }
+  
+  res.json(results);
+});
+
 // DEBUG: Show all environment variables (REMOVE AFTER DEBUGGING)
 app.get('/api/debug-env', (req, res) => {
   // Get all env var keys (not values for security)

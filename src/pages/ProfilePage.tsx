@@ -209,7 +209,8 @@ const ProfilePage = () => {
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
                   id="phone"
-                  type="tel"
+                  type="text"
+                  inputMode="tel"
                   placeholder="Enter your phone number"
                   value={formData.phone}
                   onChange={(e) =>

@@ -430,7 +430,8 @@ const AuthPage = () => {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                       <Input
                         id="phone"
-                        type="tel"
+                        type="text"
+                        inputMode="tel"
                         placeholder="Enter your phone number"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}

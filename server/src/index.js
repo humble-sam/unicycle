@@ -170,9 +170,22 @@ app.use('/api/*', (req, res) => {
 
 // Serve static files from React build in production
 if (process.env.NODE_ENV === 'production') {
-  // Build outputs to root (cwd) on Hostinger
-  const buildPath = process.cwd();
-  console.log('Serving frontend from:', buildPath);
+  // Try multiple possible build paths
+  const possiblePaths = [
+    path.join(process.cwd(), 'dist'),           // root/dist
+    path.join(__dirname, '../../dist'),         // server/../../dist
+    process.cwd()                               // root (fallback)
+  ];
+  
+  const fs = require('fs');
+  let buildPath = possiblePaths[0];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+      buildPath = p;
+      console.log('Serving frontend from:', buildPath);
+      break;
+    }
+  }
   
   // Serve static assets (JS, CSS, images, etc.)
   app.use(express.static(buildPath));

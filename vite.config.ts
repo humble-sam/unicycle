@@ -8,18 +8,10 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   build: {
-    outDir: ".",
-    emptyOutDir: false,
+    outDir: "dist",
+    emptyOutDir: true,
     sourcemap: mode === "development",
     minify: mode === "production" ? "esbuild" : false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-toast"],
-        },
-      },
-    },
   },
   plugins: [react()],
   resolve: {

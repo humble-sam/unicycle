@@ -36,8 +36,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Security middleware
+// Temporarily disable CSP to debug blank page issue
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false, // Disabled for debugging - will re-enable after fixing blank page
 }));
 
 // CORS configuration
@@ -123,6 +125,19 @@ app.get('/api/test-asset', (req, res) => {
       path: assetPath
     });
   }
+});
+
+// DEBUG: Check response headers for a specific path
+app.get('/api/debug-headers', (req, res) => {
+  res.json({
+    message: 'Check Network tab in browser DevTools for actual headers',
+    instructions: 'Visit https://unicycle.digital/assets/index-DmTW-UjC.js and check response headers',
+    expectedHeaders: {
+      'Content-Type': 'application/javascript or text/javascript',
+      'Content-Length': 'should be present',
+      'Cache-Control': 'should be present'
+    }
+  });
 });
 
 // DEBUG: Test static file serving

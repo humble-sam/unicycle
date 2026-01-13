@@ -89,6 +89,29 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// DEBUG: Show all environment variables (REMOVE AFTER DEBUGGING)
+app.get('/api/debug-env', (req, res) => {
+  // Get all env var keys (not values for security)
+  const envKeys = Object.keys(process.env);
+  const dbRelated = envKeys.filter(k => k.includes('DB') || k.includes('JWT') || k.includes('NODE') || k.includes('PORT'));
+  
+  res.json({
+    totalEnvVars: envKeys.length,
+    dbRelatedKeys: dbRelated,
+    values: {
+      DB_HOST: process.env.DB_HOST || 'NOT SET',
+      DB_USER: process.env.DB_USER || 'NOT SET',
+      DB_NAME: process.env.DB_NAME || 'NOT SET',
+      DB_PORT: process.env.DB_PORT || 'NOT SET',
+      NODE_ENV: process.env.NODE_ENV || 'NOT SET',
+      PORT: process.env.PORT || 'NOT SET',
+      JWT_SECRET: process.env.JWT_SECRET ? 'SET (hidden)' : 'NOT SET'
+    },
+    cwd: process.cwd(),
+    dirname: __dirname
+  });
+});
+
 // Apply settings middleware to all API routes (except health check and admin)
 app.use('/api', checkAPIEnabled);
 app.use('/api', checkMaintenanceMode);

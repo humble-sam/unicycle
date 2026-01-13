@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cd server && npm install --production",
+    "build": "vite build",
     "build:dev": "vite build --mode development",
     "start": "cd server && node src/index.js",
+    "postinstall": "cd server && npm install --omit=dev",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -63,6 +64,11 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.9",
+    "vite": "^5.4.19",
+    "@vitejs/plugin-react-swc": "^3.11.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -71,16 +77,11 @@
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
-    "@vitejs/plugin-react-swc": "^3.11.0",
-    "autoprefixer": "^10.4.21",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.38.0",
-    "vite": "^5.4.19"
+    "typescript-eslint": "^8.38.0"
   }
 }

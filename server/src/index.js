@@ -110,7 +110,8 @@ app.get('/api/debug-paths', (req, res) => {
       const exists = fs.existsSync(p);
       const hasIndex = exists && fs.existsSync(path.join(p, 'index.html'));
       const files = exists ? fs.readdirSync(p).slice(0, 10) : [];
-      results[p] = { exists, hasIndex, files };
+      const hasAssets = exists && fs.existsSync(path.join(p, 'assets'));
+      results[p] = { exists, hasIndex, hasAssets, files };
     } catch (e) {
       results[p] = { error: e.message };
     }
@@ -121,6 +122,18 @@ app.get('/api/debug-paths', (req, res) => {
     results['cwd_contents'] = fs.readdirSync(process.cwd());
   } catch (e) {
     results['cwd_contents'] = { error: e.message };
+  }
+  
+  // Check what the server is actually using
+  if (process.env.NODE_ENV === 'production') {
+    let buildPath = possiblePaths[0];
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+        buildPath = p;
+        break;
+      }
+    }
+    results['server_using'] = buildPath;
   }
   
   res.json(results);
@@ -179,16 +192,25 @@ if (process.env.NODE_ENV === 'production') {
   
   const fs = require('fs');
   let buildPath = possiblePaths[0];
+  let found = false;
   for (const p of possiblePaths) {
     if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
       buildPath = p;
-      console.log('Serving frontend from:', buildPath);
+      found = true;
+      console.log('✓ Serving frontend from:', buildPath);
       break;
     }
   }
   
+  if (!found) {
+    console.error('✗ ERROR: Frontend build not found! Checked paths:', possiblePaths);
+  }
+  
   // Serve static assets (JS, CSS, images, etc.)
-  app.use(express.static(buildPath));
+  app.use(express.static(buildPath, { 
+    index: false, // Don't serve index.html automatically, we'll handle it below
+    dotfiles: 'ignore'
+  }));
   
   // Handle React Router - serve index.html for all non-API routes
   app.get('*', (req, res) => {
@@ -196,7 +218,14 @@ if (process.env.NODE_ENV === 'production') {
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Endpoint not found' });
     }
-    res.sendFile(path.join(buildPath, 'index.html'));
+    
+    const indexPath = path.join(buildPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      console.error('✗ ERROR: index.html not found at:', indexPath);
+      res.status(500).send('Frontend build not found. Please check server logs.');
+    }
   });
 }
 

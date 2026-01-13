@@ -59,8 +59,23 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check (bypass maintenance mode)
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  try {
+    const db = require('./config/database');
+    await db.query('SELECT 1');
+    res.json({ 
+      status: 'ok', 
+      database: 'connected',
+      timestamp: new Date().toISOString() 
+    });
+  } catch (err) {
+    res.json({ 
+      status: 'ok', 
+      database: 'disconnected',
+      error: err.message,
+      timestamp: new Date().toISOString() 
+    });
+  }
 });
 
 // Apply settings middleware to all API routes (except health check and admin)

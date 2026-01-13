@@ -98,7 +98,17 @@ router.post('/signup', checkRegistrationEnabled, signupValidation, async (req, r
     }
   } catch (err) {
     console.error('Signup error:', err);
-    res.status(500).json({ error: 'Failed to create account' });
+    // Provide more specific error messages
+    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+      return res.status(500).json({ error: 'Database connection failed. Please try again later.' });
+    }
+    if (err.code === 'ER_NO_SUCH_TABLE') {
+      return res.status(500).json({ error: 'Database not initialized. Please contact support.' });
+    }
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    res.status(500).json({ error: 'Failed to create account. Please try again.' });
   }
 });
 

@@ -19,7 +19,7 @@ dist-ssr
 .env.local
 .env.*.local
 server/.env
-!server/.env.example
+!server/.env.production
 
 # Uploads (created on server)
 server/uploads/

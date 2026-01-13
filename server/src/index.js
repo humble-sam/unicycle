@@ -1,6 +1,9 @@
 const path = require('path');
-// Load .env from server directory (for local development)
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+// Load environment variables
+// In production, use .env.production (committed to git for Hostinger)
+// In development, use .env (gitignored)
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
+require('dotenv').config({ path: path.join(__dirname, '..', envFile) });
 
 const express = require('express');
 const cors = require('cors');

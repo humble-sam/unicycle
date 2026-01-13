@@ -92,6 +92,49 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// DEBUG: Test static file serving
+app.get('/api/debug-static', (req, res) => {
+  const fs = require('fs');
+  const buildPath = path.join(process.cwd(), 'dist');
+  const indexPath = path.join(buildPath, 'index.html');
+  const assetsPath = path.join(buildPath, 'assets');
+  
+  let indexContent = '';
+  let assetsFiles = [];
+  
+  try {
+    if (fs.existsSync(indexPath)) {
+      indexContent = fs.readFileSync(indexPath, 'utf8');
+      // Extract script and link tags
+      const scriptMatch = indexContent.match(/<script[^>]*src="([^"]+)"/);
+      const linkMatch = indexContent.match(/<link[^>]*href="([^"]+)"/);
+      indexContent = {
+        hasScript: !!scriptMatch,
+        scriptSrc: scriptMatch ? scriptMatch[1] : null,
+        hasLink: !!linkMatch,
+        linkHref: linkMatch ? linkMatch[1] : null,
+        fullHtml: indexContent.substring(0, 500) // First 500 chars
+      };
+    }
+    
+    if (fs.existsSync(assetsPath)) {
+      assetsFiles = fs.readdirSync(assetsPath);
+    }
+  } catch (e) {
+    indexContent = { error: e.message };
+  }
+  
+  res.json({
+    buildPath,
+    indexPath,
+    assetsPath,
+    indexExists: fs.existsSync(indexPath),
+    assetsExists: fs.existsSync(assetsPath),
+    indexContent,
+    assetsFiles
+  });
+});
+
 // DEBUG: Check file paths (REMOVE AFTER DEBUGGING)
 app.get('/api/debug-paths', (req, res) => {
   const fs = require('fs');
@@ -206,17 +249,25 @@ if (process.env.NODE_ENV === 'production') {
     console.error('✗ ERROR: Frontend build not found! Checked paths:', possiblePaths);
   }
   
-  // Serve static assets (JS, CSS, images, etc.)
-  app.use(express.static(buildPath, { 
-    index: false, // Don't serve index.html automatically, we'll handle it below
-    dotfiles: 'ignore'
+  // Serve static assets (JS, CSS, images, etc.) - must come before catch-all route
+  app.use(express.static(buildPath, {
+    dotfiles: 'ignore',
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
   }));
   
   // Handle React Router - serve index.html for all non-API routes
-  app.get('*', (req, res) => {
+  // This must be LAST, after all other routes
+  app.get('*', (req, res, next) => {
     // Don't serve index.html for API routes
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Endpoint not found' });
+    }
+    
+    // Don't serve index.html for static assets (they should be handled by express.static above)
+    if (req.path.startsWith('/assets/') || req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+      return res.status(404).send('Asset not found');
     }
     
     const indexPath = path.join(buildPath, 'index.html');

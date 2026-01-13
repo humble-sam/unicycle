@@ -35,6 +35,43 @@ const { checkMaintenanceMode, checkAPIEnabled } = require('./middleware/settings
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// #region agent log - H1/H5: Track all incoming requests to see what's being requested
+const requestLog = [];
+app.use((req, res, next) => {
+  const entry = { time: Date.now(), method: req.method, path: req.path, url: req.url };
+  requestLog.push(entry);
+  if (requestLog.length > 50) requestLog.shift(); // Keep last 50
+  console.log(`[REQ] ${req.method} ${req.path}`);
+  next();
+});
+// #endregion
+
+// #region agent log - Debug endpoint to see recent requests
+app.get('/api/debug-requests', (req, res) => {
+  res.json({ 
+    recentRequests: requestLog.slice(-20),
+    total: requestLog.length,
+    hypothesisId: 'H1-H5'
+  });
+});
+// #endregion
+
+// #region agent log - H2/H3: Directly serve JS asset with explicit headers to test MIME type
+app.get('/api/serve-js-asset', (req, res) => {
+  const fs = require('fs');
+  const assetPath = path.join(process.cwd(), 'dist', 'assets', 'index-DmTW-UjC.js');
+  
+  if (fs.existsSync(assetPath)) {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('X-Debug', 'direct-serve');
+    const content = fs.readFileSync(assetPath);
+    res.send(content);
+  } else {
+    res.status(404).json({ error: 'Asset not found', path: assetPath });
+  }
+});
+// #endregion
+
 // Security middleware
 // Temporarily disable CSP to debug blank page issue
 app.use(helmet({
@@ -127,18 +164,61 @@ app.get('/api/test-asset', (req, res) => {
   }
 });
 
-// DEBUG: Check response headers for a specific path
-app.get('/api/debug-headers', (req, res) => {
-  res.json({
-    message: 'Check Network tab in browser DevTools for actual headers',
-    instructions: 'Visit https://unicycle.digital/assets/index-DmTW-UjC.js and check response headers',
-    expectedHeaders: {
-      'Content-Type': 'application/javascript or text/javascript',
-      'Content-Length': 'should be present',
-      'Cache-Control': 'should be present'
-    }
-  });
+// #region agent log - H4: Check if React app would crash - serve a test HTML with inline script
+app.get('/api/debug-test-react', (req, res) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head><title>React Load Test</title></head>
+    <body>
+      <div id="test">Loading...</div>
+      <script type="module">
+        document.getElementById('test').textContent = 'Module scripts work!';
+        // Try to load the actual React bundle
+        import('/assets/index-DmTW-UjC.js')
+          .then(() => { document.getElementById('test').textContent += ' React bundle loaded!'; })
+          .catch(e => { document.getElementById('test').textContent += ' ERROR: ' + e.message; });
+      </script>
+    </body>
+    </html>
+  `);
 });
+// #endregion
+
+// #region agent log - H2/H3: Full diagnostic of asset serving
+app.get('/api/debug-full', async (req, res) => {
+  const fs = require('fs');
+  const buildPath = path.join(process.cwd(), 'dist');
+  const jsPath = path.join(buildPath, 'assets', 'index-DmTW-UjC.js');
+  const cssPath = path.join(buildPath, 'assets', 'index-rWHT4jOk.css');
+  
+  const results = {
+    hypotheses: {
+      H1: 'Static middleware route order',
+      H2: 'Asset path resolution failure', 
+      H3: 'MIME type issue',
+      H4: 'React app crashes',
+      H5: 'Request blocked by middleware'
+    },
+    buildPath,
+    jsExists: fs.existsSync(jsPath),
+    cssExists: fs.existsSync(cssPath),
+    jsSize: fs.existsSync(jsPath) ? fs.statSync(jsPath).size : 0,
+    cssSize: fs.existsSync(cssPath) ? fs.statSync(cssPath).size : 0,
+    recentRequests: requestLog.slice(-10),
+    nodeEnv: process.env.NODE_ENV,
+    testUrls: {
+      directJs: '/api/serve-js-asset',
+      testReact: '/api/debug-test-react',
+      assetJs: '/assets/index-DmTW-UjC.js',
+      assetCss: '/assets/index-rWHT4jOk.css'
+    }
+  };
+  
+  res.json(results);
+});
+// #endregion
 
 // DEBUG: Test static file serving
 app.get('/api/debug-static', (req, res) => {
@@ -297,6 +377,17 @@ if (process.env.NODE_ENV === 'production') {
     console.error('✗ ERROR: Frontend build not found! Checked paths:', possiblePaths);
   }
   
+  // #region agent log - H1/H3: Log when static middleware processes a request
+  app.use((req, res, next) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+      const filePath = path.join(buildPath, req.path);
+      const exists = fs.existsSync(filePath);
+      console.log(`[STATIC] ${req.path} -> ${filePath} (exists: ${exists})`);
+    }
+    next();
+  });
+  // #endregion
+  
   // Serve static assets (JS, CSS, images, etc.) - must come before catch-all route
   app.use(express.static(buildPath, {
     dotfiles: 'ignore',
@@ -309,6 +400,10 @@ if (process.env.NODE_ENV === 'production') {
   // This must be LAST, after all other routes
   // express.static above will handle /assets/ requests before this route
   app.get('*', (req, res) => {
+    // #region agent log - H1: Log when catch-all receives a request
+    console.log(`[CATCH-ALL] ${req.path} (should only see non-asset paths here)`);
+    // #endregion
+    
     // Don't serve index.html for API routes
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Endpoint not found' });

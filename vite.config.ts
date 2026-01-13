@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   build: {
-    outDir: "dist",
+    outDir: "server/public",
     emptyOutDir: true,
     sourcemap: mode === "development",
     minify: mode === "production" ? "esbuild" : false,

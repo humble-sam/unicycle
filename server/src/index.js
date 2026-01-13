@@ -136,7 +136,23 @@ app.use('/api/*', (req, res) => {
 
 // Serve static files from React build in production
 if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, '../../dist');
+  // Try multiple possible build paths (Hostinger may use different locations)
+  const possiblePaths = [
+    path.join(__dirname, '../public'),      // server/public (Hostinger default)
+    path.join(__dirname, '../../dist'),     // root/dist (vite default)
+    path.join(process.cwd(), 'dist'),       // cwd/dist
+    path.join(process.cwd(), 'server/public') // cwd/server/public
+  ];
+  
+  let buildPath = possiblePaths[0]; // default
+  const fs = require('fs');
+  for (const p of possiblePaths) {
+    if (fs.existsSync(path.join(p, 'index.html'))) {
+      buildPath = p;
+      console.log('Found frontend build at:', buildPath);
+      break;
+    }
+  }
   
   // Serve static assets (JS, CSS, images, etc.)
   app.use(express.static(buildPath));

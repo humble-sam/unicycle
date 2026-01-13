@@ -8,8 +8,8 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   build: {
-    outDir: "server/public",
-    emptyOutDir: true,
+    outDir: ".",
+    emptyOutDir: false,
     sourcemap: mode === "development",
     minify: mode === "production" ? "esbuild" : false,
     rollupOptions: {

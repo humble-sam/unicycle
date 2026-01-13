@@ -1,9 +1,20 @@
-require('dotenv').config();
+const path = require('path');
+// Load .env from server directory (for local development)
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const path = require('path');
+
+// Debug: Log environment variables (remove in production later)
+console.log('ENV CHECK:', {
+  DB_HOST: process.env.DB_HOST || 'NOT SET',
+  DB_USER: process.env.DB_USER || 'NOT SET',
+  DB_NAME: process.env.DB_NAME || 'NOT SET',
+  NODE_ENV: process.env.NODE_ENV || 'NOT SET',
+  PORT: process.env.PORT || 'NOT SET'
+});
 
 // Import routes
 const authRoutes = require('./routes/auth');

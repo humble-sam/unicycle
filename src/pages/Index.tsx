@@ -27,8 +27,7 @@ import {
   ArrowRight, 
   Shield, 
   Users, 
-  Zap,
-  CheckCircle2
+  Zap
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -118,19 +117,14 @@ const Index = () => {
 
           <div className="container relative">
             <div className="max-w-3xl mx-auto text-center">
-              <Badge variant="verified" className="mb-6 animate-fade-in">
-                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                Trusted by 50,000+ students
-              </Badge>
-              
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4 sm:mb-6 animate-slide-up">
                 Buy & Sell Within Your
                 <span className="block text-secondary">Campus Community</span>
               </h1>
               
               <p className="text-base sm:text-lg md:text-xl text-primary-foreground/80 mb-8 sm:mb-10 px-4 sm:px-0 animate-slide-up" style={{ animationDelay: "100ms" }}>
-                The trusted marketplace for students. Find great deals on laptops, textbooks, 
-                and more from verified students at your college.
+                Your campus marketplace for pre-loved items. Connect with fellow students 
+                and find what you need.
               </p>
 
               <div className="flex justify-center animate-slide-up" style={{ animationDelay: "200ms" }}>

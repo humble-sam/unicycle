@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Heart,
   Flag,
+  LogIn,
 } from "lucide-react";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { reportsApi } from "@/lib/api";
@@ -98,6 +99,11 @@ const ProductDetailPage = () => {
   const [reportDescription, setReportDescription] = useState('');
   const [reporting, setReporting] = useState(false);
   const { toast } = useToast();
+  
+  // Touch swipe state
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const minSwipeDistance = 50;
 
   useEffect(() => {
     const session = authApi.getSession();
@@ -129,6 +135,30 @@ const ProductDetailPage = () => {
 
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  // Touch handlers for swipe
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe && images.length > 1) {
+      nextImage();
+    }
+    if (isRightSwipe && images.length > 1) {
+      prevImage();
+    }
   };
 
   if (isLoading) {
@@ -185,29 +215,41 @@ const ProductDetailPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted">
+            <div 
+              className="relative aspect-square rounded-2xl overflow-hidden bg-muted touch-pan-y"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
               <img
                 src={images[currentImageIndex]}
                 alt={product.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover select-none"
+                draggable={false}
               />
 
               {images.length > 1 && (
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background/90 flex items-center justify-center hover:bg-background transition-colors shadow-md"
+                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-background/90 flex items-center justify-center hover:bg-background active:scale-95 transition-all shadow-md"
+                    aria-label="Previous image"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-6 h-6 sm:w-5 sm:h-5" />
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-background/90 flex items-center justify-center hover:bg-background transition-colors shadow-md"
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-background/90 flex items-center justify-center hover:bg-background active:scale-95 transition-all shadow-md"
+                    aria-label="Next image"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-6 h-6 sm:w-5 sm:h-5" />
                   </button>
                   <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/90 px-3 py-1.5 rounded-full text-sm font-medium">
                     {currentImageIndex + 1} / {images.length}
+                  </div>
+                  {/* Swipe hint for mobile */}
+                  <div className="absolute bottom-12 left-1/2 -translate-x-1/2 text-xs text-muted-foreground bg-background/70 px-2 py-1 rounded sm:hidden">
+                    Swipe to navigate
                   </div>
                 </>
               )}
@@ -341,35 +383,56 @@ const ProductDetailPage = () => {
                 <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground text-center">
                   This is your listing
                 </div>
+              ) : !currentUserId ? (
+                // User not logged in - show login prompt
+                <div className="space-y-3">
+                  <div className="p-4 rounded-lg bg-muted/50 border border-border text-center">
+                    <LogIn className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Sign in to contact the seller
+                    </p>
+                    <Button
+                      variant="sell"
+                      className="w-full gap-2"
+                      onClick={() => navigate("/auth")}
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Sign In to Contact
+                    </Button>
+                  </div>
+                </div>
               ) : (
+                // User logged in - show contact buttons
                 <div className="space-y-3">
                   {product.seller_phone && (
                     <Button
                       variant="sell"
                       className="w-full gap-2"
-                      onClick={() => window.open(`tel:${product.seller_phone}`, "_self")}
+                      onClick={() => window.open(`tel:${product.seller_phone}`, "_blank")}
                     >
                       <Phone className="w-4 h-4" />
                       Call Seller
                     </Button>
                   )}
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2"
-                    onClick={() => {
-                      const message = encodeURIComponent(
-                        `Hi! I'm interested in your listing "${product.title}" on UniCycle.`
-                      );
-                      if (product.seller_phone) {
-                        window.open(`https://wa.me/${product.seller_phone.replace(/\D/g, "")}?text=${message}`, "_blank");
-                      } else {
-                        navigate("/auth");
-                      }
-                    }}
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    WhatsApp
-                  </Button>
+                  {product.seller_phone ? (
+                    <Button
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={() => {
+                        const message = encodeURIComponent(
+                          `Hi! I'm interested in your listing "${product.title}" on UniCycle.`
+                        );
+                        window.open(`https://wa.me/${product.seller_phone!.replace(/\D/g, "")}?text=${message}`, "_blank");
+                      }}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      WhatsApp
+                    </Button>
+                  ) : (
+                    <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground text-center">
+                      Seller has not provided contact info
+                    </div>
+                  )}
                 </div>
               )}
             </div>

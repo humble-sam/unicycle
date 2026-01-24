@@ -181,126 +181,233 @@ const DashboardPage = () => {
             </Button>
           </div>
         ) : (
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead className="hidden md:table-cell">Condition</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden flex-shrink-0">
-                          <img
-                            src={product.images?.[0] || "/placeholder.svg"}
-                            alt={product.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-foreground truncate max-w-[200px]">
-                            {product.title}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {product.category}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-semibold text-primary">
+          <>
+            {/* Mobile Card View */}
+            <div className="sm:hidden space-y-4">
+              {products.map((product) => (
+                <div
+                  key={product.id}
+                  className="bg-card rounded-xl border border-border p-4"
+                >
+                  <div className="flex gap-4">
+                    <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                      <img
+                        src={product.images?.[0] || "/placeholder.svg"}
+                        alt={product.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">
+                        {product.title}
+                      </p>
+                      <p className="text-lg font-bold text-primary mt-1">
                         {product.price === 0 ? "Free" : `₹${product.price.toLocaleString()}`}
-                      </span>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant="outline">
-                        {conditionLabels[product.condition] || product.condition}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge
-                        variant={product.is_active ? "default" : "secondary"}
-                        className={product.is_active ? "bg-secondary text-secondary-foreground" : ""}
-                      >
-                        {product.is_active ? "Active" : "Hidden"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-muted-foreground">
-                      {formatDate(product.created_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigate(`/edit/${product.id}`)}
-                          title="Edit listing"
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge
+                          variant={product.is_active ? "default" : "secondary"}
+                          className={`text-xs ${product.is_active ? "bg-secondary text-secondary-foreground" : ""}`}
                         >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
+                          {product.is_active ? "Active" : "Hidden"}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {conditionLabels[product.condition] || product.condition}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/edit/${product.id}`)}
+                      className="flex-1"
+                    >
+                      <Pencil className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleActive(product.id, product.is_active)}
+                      disabled={togglingId === product.id}
+                      className="flex-1"
+                    >
+                      {togglingId === product.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : product.is_active ? (
+                        <>
+                          <EyeOff className="w-4 h-4 mr-1" />
+                          Hide
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4 mr-1" />
+                          Show
+                        </>
+                      )}
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleToggleActive(product.id, product.is_active)}
-                          disabled={togglingId === product.id}
-                          title={product.is_active ? "Hide listing" : "Show listing"}
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                          disabled={deletingId === product.id}
                         >
-                          {togglingId === product.id ? (
+                          {deletingId === product.id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : product.is_active ? (
-                            <EyeOff className="w-4 h-4" />
                           ) : (
-                            <Eye className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           )}
                         </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                              disabled={deletingId === product.id}
-                            >
-                              {deletingId === product.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete listing?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete "{product.title}". This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(product.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete listing?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete "{product.title}". This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(product.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden sm:block bg-card rounded-2xl border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead className="hidden md:table-cell">Condition</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden lg:table-cell">Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden flex-shrink-0">
+                            <img
+                              src={product.images?.[0] || "/placeholder.svg"}
+                              alt={product.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground truncate max-w-[200px]">
+                              {product.title}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {product.category}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold text-primary">
+                          {product.price === 0 ? "Free" : `₹${product.price.toLocaleString()}`}
+                        </span>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge variant="outline">
+                          {conditionLabels[product.condition] || product.condition}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={product.is_active ? "default" : "secondary"}
+                          className={product.is_active ? "bg-secondary text-secondary-foreground" : ""}
+                        >
+                          {product.is_active ? "Active" : "Hidden"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-muted-foreground">
+                        {formatDate(product.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate(`/edit/${product.id}`)}
+                            title="Edit listing"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleToggleActive(product.id, product.is_active)}
+                            disabled={togglingId === product.id}
+                            title={product.is_active ? "Hide listing" : "Show listing"}
+                          >
+                            {togglingId === product.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : product.is_active ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                disabled={deletingId === product.id}
+                              >
+                                {deletingId === product.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete listing?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete "{product.title}". This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(product.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </main>
 

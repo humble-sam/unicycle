@@ -47,9 +47,11 @@ const Header = () => {
       <div className="container flex h-16 items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-            <span className="text-primary-foreground font-bold text-lg">U</span>
-          </div>
+          <img 
+            src="/unicycle-logo.svg" 
+            alt="UniCycle" 
+            className="w-9 h-9 rounded-xl shadow-md group-hover:shadow-lg transition-shadow"
+          />
           <span className="text-xl font-bold text-foreground tracking-tight">
             Uni<span className="text-secondary">Cycle</span>
           </span>

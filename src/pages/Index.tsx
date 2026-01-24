@@ -117,6 +117,11 @@ const Index = () => {
 
           <div className="container relative">
             <div className="max-w-3xl mx-auto text-center">
+              {/* Tagline */}
+              <p className="text-sm sm:text-base font-medium text-secondary mb-3 animate-fade-in tracking-wide">
+                From One Student to Another
+              </p>
+              
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4 sm:mb-6 animate-slide-up">
                 Buy & Sell Within Your
                 <span className="block text-secondary">Campus Community</span>

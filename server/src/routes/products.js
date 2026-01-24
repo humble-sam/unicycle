@@ -21,6 +21,115 @@ const productValidation = [
   body('college').optional().trim()
 ];
 
+// Keyword to category mapping for better search
+const searchKeywordMappings = {
+  // Electronics
+  'laptop': 'electronics',
+  'laptops': 'electronics',
+  'computer': 'electronics',
+  'pc': 'electronics',
+  'macbook': 'electronics',
+  'phone': 'electronics',
+  'mobile': 'electronics',
+  'iphone': 'electronics',
+  'android': 'electronics',
+  'samsung': 'electronics',
+  'tablet': 'electronics',
+  'ipad': 'electronics',
+  'headphones': 'electronics',
+  'earphones': 'electronics',
+  'earbuds': 'electronics',
+  'airpods': 'electronics',
+  'speaker': 'electronics',
+  'charger': 'electronics',
+  'cable': 'electronics',
+  'mouse': 'electronics',
+  'keyboard': 'electronics',
+  'monitor': 'electronics',
+  'printer': 'electronics',
+  'camera': 'electronics',
+  'calculator': 'electronics',
+  'dell': 'electronics',
+  'hp': 'electronics',
+  'lenovo': 'electronics',
+  'asus': 'electronics',
+  'acer': 'electronics',
+  'inspiron': 'electronics',
+  
+  // Books & Stationary
+  'book': 'books-stationary',
+  'books': 'books-stationary',
+  'textbook': 'books-stationary',
+  'textbooks': 'books-stationary',
+  'notebook': 'books-stationary',
+  'notes': 'books-stationary',
+  'pen': 'books-stationary',
+  'pencil': 'books-stationary',
+  'stationary': 'books-stationary',
+  'stationery': 'books-stationary',
+  'paper': 'books-stationary',
+  'novel': 'books-stationary',
+  'fiction': 'books-stationary',
+  'study': 'books-stationary',
+  'material': 'books-stationary',
+  
+  // Furniture
+  'furniture': 'furniture',
+  'chair': 'furniture',
+  'desk': 'furniture',
+  'table': 'furniture',
+  'bed': 'furniture',
+  'mattress': 'furniture',
+  'shelf': 'furniture',
+  'shelves': 'furniture',
+  'cupboard': 'furniture',
+  'wardrobe': 'furniture',
+  'lamp': 'furniture',
+  'fan': 'furniture',
+  'mirror': 'furniture',
+  
+  // Kitchen Items
+  'kitchen': 'kitchen-items',
+  'utensil': 'kitchen-items',
+  'utensils': 'kitchen-items',
+  'cookware': 'kitchen-items',
+  'pot': 'kitchen-items',
+  'pan': 'kitchen-items',
+  'plate': 'kitchen-items',
+  'dishes': 'kitchen-items',
+  'spoon': 'kitchen-items',
+  'fork': 'kitchen-items',
+  'knife': 'kitchen-items',
+  'blender': 'kitchen-items',
+  'mixer': 'kitchen-items',
+  'microwave': 'kitchen-items',
+  'kettle': 'kitchen-items',
+  'induction': 'kitchen-items',
+  'cooker': 'kitchen-items',
+  'bottle': 'kitchen-items',
+  
+  // Vehicles
+  'vehicle': 'vehicles',
+  'vehicles': 'vehicles',
+  'cycle': 'vehicles',
+  'bicycle': 'vehicles',
+  'bike': 'vehicles',
+  'scooter': 'vehicles',
+  'scooty': 'vehicles',
+  'motorcycle': 'vehicles',
+  'activa': 'vehicles',
+  'honda': 'vehicles',
+  'hero': 'vehicles',
+  'tvs': 'vehicles',
+  'car': 'vehicles',
+  
+  // Giveaways
+  'free': 'giveaways',
+  'giveaway': 'giveaways',
+  'donate': 'giveaways',
+  'donation': 'giveaways'
+};
+
 // GET /api/products - List products with filters
 router.get('/', optionalAuth, async (req, res) => {
   try {
@@ -34,8 +143,24 @@ router.get('/', optionalAuth, async (req, res) => {
       userId
     } = req.query;
 
-    let whereConditions = ['p.is_active = TRUE'];
+    let whereConditions = [];
     let params = [];
+
+    // If user is fetching their own products, show all (including inactive)
+    // Otherwise, only show active products
+    if (userId && req.user && userId === req.user.id) {
+      // User fetching their own products - show all
+      whereConditions.push('p.user_id = ?');
+      params.push(userId);
+    } else {
+      // Public listing - only show active products
+      whereConditions.push('p.is_active = TRUE');
+      
+      if (userId) {
+        whereConditions.push('p.user_id = ?');
+        params.push(userId);
+      }
+    }
 
     if (category) {
       whereConditions.push('p.category = ?');
@@ -48,14 +173,34 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     if (search) {
-      whereConditions.push('(p.title LIKE ? OR p.description LIKE ? OR p.category LIKE ?)');
+      const searchLower = search.toLowerCase().trim();
       const searchTerm = `%${search}%`;
-      params.push(searchTerm, searchTerm, searchTerm);
-    }
-
-    if (userId) {
-      whereConditions.push('p.user_id = ?');
-      params.push(userId);
+      
+      // Check if search term maps to a category
+      const mappedCategory = searchKeywordMappings[searchLower];
+      
+      if (mappedCategory) {
+        // Search matches a keyword - search in title, description, AND include category matches
+        whereConditions.push('(p.title LIKE ? OR p.description LIKE ? OR p.category = ?)');
+        params.push(searchTerm, searchTerm, mappedCategory);
+      } else {
+        // Check if any word in search maps to a category
+        const searchWords = searchLower.split(/\s+/);
+        const matchedCategories = searchWords
+          .map(word => searchKeywordMappings[word])
+          .filter(cat => cat);
+        
+        if (matchedCategories.length > 0) {
+          // Build condition with category matches
+          const categoryPlaceholders = matchedCategories.map(() => '?').join(', ');
+          whereConditions.push(`(p.title LIKE ? OR p.description LIKE ? OR p.category IN (${categoryPlaceholders}))`);
+          params.push(searchTerm, searchTerm, ...matchedCategories);
+        } else {
+          // Standard search - no keyword mapping found
+          whereConditions.push('(p.title LIKE ? OR p.description LIKE ? OR p.category LIKE ?)');
+          params.push(searchTerm, searchTerm, searchTerm);
+        }
+      }
     }
 
     let orderBy = 'p.created_at DESC';
@@ -139,10 +284,16 @@ router.get('/:id', optionalAuth, async (req, res) => {
       );
     }
 
-    res.json({
+    // Only return seller contact info if user is authenticated
+    const responseData = {
       ...product,
-      images: typeof product.images === 'string' ? JSON.parse(product.images) : product.images
-    });
+      images: typeof product.images === 'string' ? JSON.parse(product.images) : product.images,
+      // Gate seller contact info behind authentication
+      seller_phone: req.user ? product.seller_phone : null,
+      seller_email: req.user ? product.seller_email : null
+    };
+
+    res.json(responseData);
   } catch (err) {
     console.error('Get product error:', err);
     res.status(500).json({ error: 'Failed to fetch product' });

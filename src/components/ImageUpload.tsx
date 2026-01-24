@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
-import { productsApi } from "@/lib/api";
+import { productsApi, authApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface ImageUploadProps {
@@ -11,13 +11,38 @@ interface ImageUploadProps {
   maxImages?: number;
 }
 
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 1000;
+
 const ImageUpload = ({ userId, images, onImagesChange, maxImages = 5 }: ImageUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>("");
+  const [failedFiles, setFailedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Helper function to upload with retry
+  const uploadWithRetry = async (files: File[], retryCount = 0): Promise<string[]> => {
+    try {
+      return await productsApi.uploadImages(files);
+    } catch (error: any) {
+      if (retryCount < MAX_RETRIES) {
+        setUploadProgress(`Retrying... (attempt ${retryCount + 2}/${MAX_RETRIES + 1})`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        return uploadWithRetry(files, retryCount + 1);
+      }
+      throw error;
+    }
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+
+    // Check if user is authenticated
+    if (!authApi.isAuthenticated()) {
+      toast.error("Please sign in to upload images");
+      return;
+    }
 
     if (images.length + files.length > maxImages) {
       toast.error(`Maximum ${maxImages} images allowed`);
@@ -25,6 +50,8 @@ const ImageUpload = ({ userId, images, onImagesChange, maxImages = 5 }: ImageUpl
     }
 
     setIsUploading(true);
+    setUploadProgress("Validating files...");
+    setFailedFiles([]);
 
     try {
       const validFiles: File[] = [];
@@ -46,18 +73,53 @@ const ImageUpload = ({ userId, images, onImagesChange, maxImages = 5 }: ImageUpl
       }
 
       if (validFiles.length > 0) {
-        const uploadedUrls = await productsApi.uploadImages(validFiles);
+        setUploadProgress(`Uploading ${validFiles.length} image(s)...`);
+        const uploadedUrls = await uploadWithRetry(validFiles);
         onImagesChange([...images, ...uploadedUrls]);
-        toast.success(`${uploadedUrls.length} image(s) uploaded`);
+        toast.success(`${uploadedUrls.length} image(s) uploaded successfully`);
+        setUploadProgress("");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload images");
+      
+      // Provide more specific error messages
+      if (error.message?.includes("401") || error.message?.includes("token") || error.message?.includes("auth")) {
+        toast.error("Session expired. Please sign in again.");
+      } else if (error.message?.includes("network") || error.message?.includes("fetch")) {
+        toast.error("Network error. Please check your connection and try again.");
+        // Save failed files for retry
+        setFailedFiles(Array.from(files || []));
+      } else if (error.message?.includes("size") || error.message?.includes("large")) {
+        toast.error("File too large. Please use images under 5MB.");
+      } else {
+        toast.error(error.message || "Failed to upload images. Please try again.");
+      }
+      setUploadProgress("");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const handleRetryFailed = async () => {
+    if (failedFiles.length === 0) return;
+    
+    setIsUploading(true);
+    setUploadProgress("Retrying upload...");
+
+    try {
+      const uploadedUrls = await uploadWithRetry(failedFiles);
+      onImagesChange([...images, ...uploadedUrls]);
+      toast.success(`${uploadedUrls.length} image(s) uploaded successfully`);
+      setFailedFiles([]);
+      setUploadProgress("");
+    } catch (error: any) {
+      toast.error("Upload failed again. Please try with smaller images.");
+      setUploadProgress("");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -117,7 +179,9 @@ const ImageUpload = ({ userId, images, onImagesChange, maxImages = 5 }: ImageUpl
             {isUploading ? (
               <>
                 <Loader2 className="w-10 h-10 text-secondary animate-spin" />
-                <p className="text-sm text-muted-foreground">Uploading...</p>
+                <p className="text-sm text-muted-foreground">
+                  {uploadProgress || "Uploading..."}
+                </p>
               </>
             ) : (
               <>
@@ -138,7 +202,28 @@ const ImageUpload = ({ userId, images, onImagesChange, maxImages = 5 }: ImageUpl
         </div>
       )}
 
-      {images.length === 0 && !isUploading && (
+      {/* Retry button for failed uploads */}
+      {failedFiles.length > 0 && !isUploading && (
+        <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-destructive">
+              {failedFiles.length} image(s) failed to upload
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRetryFailed}
+              className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Retry
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {images.length === 0 && !isUploading && failedFiles.length === 0 && (
         <p className="text-xs text-muted-foreground text-center">
           First image will be used as the cover photo
         </p>

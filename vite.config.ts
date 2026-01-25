@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     sourcemap: mode === "development",
     minify: mode === "production" ? "esbuild" : false,
     rollupOptions: {
-      input: path.resolve(__dirname, "index.dev.html"),
+      input: path.resolve(__dirname, "index.html"),
     },
   },
   plugins: [

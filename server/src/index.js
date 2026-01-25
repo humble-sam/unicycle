@@ -3,22 +3,36 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// SAFE STARTUP WRAPPER
-// This ensures the server starts even if dependencies fail
+// GLOBAL ERROR STATE
+const startupErrors = [];
 
-// Load env vars safely
+// Helper to safely require modules
+const safeRequire = (name, optional = false) => {
+  try {
+    return require(name);
+  } catch (e) {
+    const msg = `Failed to load module: ${name} - ${e.message}`;
+    console.error(msg);
+    if (!optional) startupErrors.push(msg);
+    return null;
+  }
+};
+
+// 1. Load dotenv (Safe)
 try {
   const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
   require('dotenv').config({ path: path.join(__dirname, '..', envFile) });
 } catch (e) {
-  console.error('Failed to load dotenv:', e);
+  startupErrors.push(`Dotenv load error: ${e.message}`);
 }
 
-const helmet = require('helmet');
-const cors = require('cors');
-const rateLimit = require('express-rate-limit');
+// 2. Load Middleware (Safe)
+const helmet = safeRequire('helmet');
+const cors = safeRequire('cors');
+const rateLimit = safeRequire('express-rate-limit');
+const fs = safeRequire('fs');
 
-// Crash handlers
+// 3. Initialize Global Handlers
 process.on('uncaughtException', (err) => {
   console.error('CRITICAL ERROR: Uncaught Exception:', err);
 });
@@ -26,37 +40,26 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('CRITICAL ERROR: Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-let dbConnectionStatus = 'Not initialized';
-let dbError = null;
-
-// Initialize app components safely
+// 4. Configure App (Safe)
 try {
-  app.use(helmet());
-  app.use(cors());
+  if (helmet) app.use(helmet());
+  if (cors) app.use(cors());
   app.use(express.json({ limit: '10mb' }));
 
-  // Rate limiting
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100
-  });
-  app.use('/api', limiter);
-
-  // Try to load DB config but don't crash if it fails
-  // We lazily require the routes to prevent them from crashing the server on load if DB is down
-  // Note: Standard require would execute the file immediately.
-  // We will load routes normally but catch errors if they bubble up from DB pool creation.
+  if (rateLimit) {
+    const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+    app.use('/api', limiter);
+  }
 } catch (e) {
-  console.error('Middleware init error:', e);
+  startupErrors.push(`Middleware config error: ${e.message}`);
 }
 
-// Health Check (Always available)
+// 5. Health Check (CRITICAL: Must work even if everything else fails)
 app.get('/health', (req, res) => {
   res.json({
-    status: 'ok',
+    status: startupErrors.length > 0 ? 'degraded' : 'ok',
     timestamp: new Date().toISOString(),
-    dbStatus: dbConnectionStatus,
-    dbError: dbError ? dbError.message : null,
+    startupErrors,
     env: {
       NODE_ENV: process.env.NODE_ENV,
       PORT: process.env.PORT
@@ -64,98 +67,88 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Import Routes Safely
-const safeRequire = (modulePath) => {
+// 6. Safe Route Loading Helper
+const loadRoute = (pathStr) => {
   try {
-    return require(modulePath);
+    return require(pathStr);
   } catch (e) {
-    console.error(`Failed to load ${modulePath}:`, e);
-    return express.Router().all('*', (req, res) => res.status(500).json({ error: `Module ${modulePath} failed to load`, details: e.message }));
+    startupErrors.push(`Route load failed: ${pathStr} - ${e.message}`);
+    return express.Router().all('*', (req, res) => res.status(500).json({ error: 'Route failed to load', details: e.message }));
   }
 };
 
-// Routes
-app.use('/api/auth', safeRequire('./routes/auth'));
-app.use('/api/products', safeRequire('./routes/products'));
-app.use('/api/profiles', safeRequire('./routes/profiles'));
-app.use('/api/wishlist', safeRequire('./routes/wishlist'));
-app.use('/api/analytics', safeRequire('./routes/analytics'));
-app.use('/api/reports', safeRequire('./routes/reports'));
-app.use('/api/ambassadors', safeRequire('./routes/ambassadors'));
-app.use('/api/admin', safeRequire('./routes/admin'));
-
-// Middleware settings
+// 7. Load Routes (Wrapped)
 try {
-  const { checkMaintenanceMode, checkAPIEnabled } = require('./middleware/settings');
-  app.use('/api', checkAPIEnabled);
-  app.use('/api', checkMaintenanceMode);
-} catch (e) {
-  console.log('Settings middleware skipped');
-}
+  app.use('/api/auth', loadRoute('./routes/auth'));
+  app.use('/api/products', loadRoute('./routes/products'));
+  app.use('/api/profiles', loadRoute('./routes/profiles'));
+  app.use('/api/wishlist', loadRoute('./routes/wishlist'));
+  app.use('/api/analytics', loadRoute('./routes/analytics'));
+  app.use('/api/reports', loadRoute('./routes/reports'));
+  app.use('/api/ambassadors', loadRoute('./routes/ambassadors'));
+  app.use('/api/admin', loadRoute('./routes/admin'));
 
-// 404 handler for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
-});
-
-// Serve static files
-const possiblePaths = [
-  path.join(process.cwd(), 'dist'),           // root/dist
-  path.join(__dirname, '../../dist'),         // server/../../dist
-  process.cwd()                               // root (fallback)
-];
-
-let buildPath = possiblePaths[0];
-let found = false;
-for (const p of possiblePaths) {
-  if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
-    buildPath = p;
-    found = true;
-    break;
-  }
-}
-
-const fs = require('fs');
-app.use(express.static(buildPath, {
-  dotfiles: 'ignore',
-  maxAge: '1d',
-  etag: true
-}));
-
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({ error: 'Endpoint not found' });
-  }
-  const indexPath = path.join(buildPath, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.status(500).send('Frontend build not found. Server is running.');
-  }
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`UseCycle API running on port ${PORT}`);
-
-  // Test DB connection after server start to not block it
+  // Settings middleware
   try {
-    const db = require('./config/database');
-    db.getConnection()
-      .then(conn => {
-        dbConnectionStatus = 'Connected';
-        console.log('DB Connected successfully');
-        conn.release();
-      })
-      .catch(err => {
-        dbConnectionStatus = 'Failed';
-        dbError = err;
-        console.error('DB Connection Failed:', err.message);
-      });
+    const { checkMaintenanceMode, checkAPIEnabled } = require('./middleware/settings');
+    app.use('/api', checkAPIEnabled);
+    app.use('/api', checkMaintenanceMode);
   } catch (e) {
-    dbConnectionStatus = 'Config Error';
-    dbError = e;
-    console.error('DB Config Error:', e.message);
+    startupErrors.push(`Settings middleware error: ${e.message}`);
+  }
+
+} catch (e) {
+  startupErrors.push(`Routing setup error: ${e.message}`);
+}
+
+// 8. Static Files (Safe)
+try {
+  const possiblePaths = [
+    path.join(process.cwd(), 'dist'),
+    path.join(__dirname, '../../dist'),
+    process.cwd()
+  ];
+
+  let buildPath = possiblePaths[0];
+  let found = false;
+
+  if (fs) {
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+        buildPath = p;
+        found = true;
+        break;
+      }
+    }
+
+    app.use(express.static(buildPath, { dotfiles: 'ignore', maxAge: '1d' }));
+
+    app.get('*', (req, res) => {
+      if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Endpoint not found' });
+
+      const indexPath = path.join(buildPath, 'index.html');
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(500).send(`
+          <h1>Frontend Build Not Found</h1>
+          <p>Server is running, but UI build is missing.</p>
+          <pre>${JSON.stringify(startupErrors, null, 2)}</pre>
+        `);
+      }
+    });
+  }
+} catch (e) {
+  startupErrors.push(`Static file setup error: ${e.message}`);
+}
+
+// 9. Start Server
+app.listen(PORT, () => {
+  console.log(`Ultra-Safe API Server running on port ${PORT}`);
+  if (startupErrors.length > 0) {
+    console.error('STARTUP ERRORS DETECTED:', startupErrors);
+  } else {
+    console.log('Startup successful with no immediate errors');
   }
 });
 

@@ -8,7 +8,18 @@ require('dotenv').config({ path: path.join(__dirname, '..', envFile) });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+
+// Handle uncaught exceptions (prevents silent crashes)
+process.on('uncaughtException', (err) => {
+  console.error('CRITICAL ERROR: Uncaught Exception:', err);
+  // Keep alive if possible, but usually better to restart
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('CRITICAL ERROR: Unhandled Rejection at:', promise, 'reason:', reason);
+});
 
 // Debug: Log environment variables (remove in production later)
 console.log('ENV CHECK:', {
@@ -429,8 +440,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server - listen on all interfaces for Hostinger
-app.listen(PORT, '0.0.0.0', () => {
+// Start server
+const server = app.listen(PORT, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║                                                       ║

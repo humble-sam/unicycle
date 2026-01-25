@@ -363,13 +363,11 @@ const possiblePaths = [
 let buildPath = possiblePaths[0];
 let found = false;
 for (const p of possiblePaths) {
-  if (fs.existsSync(p)) {
-    if (fs.existsSync(path.join(p, 'index.dev.html')) || fs.existsSync(path.join(p, 'index.html'))) {
-      buildPath = p;
-      found = true;
-      console.log('✓ Serving frontend from:', buildPath);
-      break;
-    }
+  if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+    buildPath = p;
+    found = true;
+    console.log('✓ Serving frontend from:', buildPath);
+    break;
   }
 }
 
@@ -377,16 +375,10 @@ if (!found) {
   console.log('! Frontend build not found in common paths, will attempt to serve current directory if index.html exists');
 }
 
-// Log when static middleware processes a request (helpful for debugging blank page)
+// Log when static middleware processes a request (helpful for debug)
 app.use((req, res, next) => {
-  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
-    const filePath = path.join(buildPath, req.path);
-    const exists = fs.existsSync(filePath);
-    if (!exists && !req.path.includes('.')) {
-      // It's likely a React Router path, let it pass to catch-all
-    } else {
-      console.log(`[STATIC] ${req.path} -> ${filePath} (exists: ${exists})`);
-    }
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    // Basic request logging
   }
   next();
 });
@@ -399,20 +391,20 @@ app.use(express.static(buildPath, {
   lastModified: true
 }));
 
-// Handle React Router - serve index.html (or index.dev.html) for all non-API routes
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', buildPath, found, timestamp: new Date().toISOString() });
+});
+
+// Handle React Router - serve index.html for all non-API routes
 app.get('*', (req, res) => {
   // Don't serve index.html for API routes
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'Endpoint not found' });
   }
 
-  // Prefer index.dev.html to bypass Apache/Hostinger interception if it exists
-  const indexDevPath = path.join(buildPath, 'index.dev.html');
   const indexPath = path.join(buildPath, 'index.html');
-
-  if (fs.existsSync(indexDevPath)) {
-    res.sendFile(indexDevPath);
-  } else if (fs.existsSync(indexPath)) {
+  if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {
     console.error('✗ ERROR: No index file found in:', buildPath);

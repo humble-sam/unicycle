@@ -19,18 +19,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    // Rename index.dev.html to index.html in build output
-    {
-      name: "rename-index",
-      closeBundle() {
-        const oldPath = path.resolve(__dirname, "dist/index.dev.html");
-        const newPath = path.resolve(__dirname, "dist/index.html");
-        if (fs.existsSync(oldPath)) {
-          fs.renameSync(oldPath, newPath);
-          console.log("Renamed index.dev.html to index.html");
-        }
-      },
-    },
   ],
   resolve: {
     alias: {

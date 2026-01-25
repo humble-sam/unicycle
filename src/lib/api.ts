@@ -267,6 +267,17 @@ export const productsApi = {
     }
 
     return result.urls;
+  },
+
+  async contact(id: string) {
+    const response = await apiFetch(`/products/${id}/contact`, {
+      method: 'PATCH',
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to contact seller');
+    }
+    return result;
   }
 };
 

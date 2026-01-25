@@ -48,7 +48,7 @@ app.use((req, res, next) => {
 
 // #region agent log - Debug endpoint to see recent requests
 app.get('/api/debug-requests', (req, res) => {
-  res.json({ 
+  res.json({
     recentRequests: requestLog.slice(-20),
     total: requestLog.length,
     hypothesisId: 'H1-H5'
@@ -60,7 +60,7 @@ app.get('/api/debug-requests', (req, res) => {
 app.get('/api/serve-js-asset', (req, res) => {
   const fs = require('fs');
   const assetPath = path.join(process.cwd(), 'dist', 'assets', 'index-DmTW-UjC.js');
-  
+
   if (fs.existsSync(assetPath)) {
     res.setHeader('Content-Type', 'application/javascript');
     res.setHeader('X-Debug', 'direct-serve');
@@ -116,17 +116,17 @@ app.get('/api/health', async (req, res) => {
   try {
     const db = require('./config/database');
     await db.query('SELECT 1');
-    res.json({ 
-      status: 'ok', 
+    res.json({
+      status: 'ok',
       database: 'connected',
-      timestamp: new Date().toISOString() 
+      timestamp: new Date().toISOString()
     });
   } catch (err) {
-    res.json({ 
-      status: 'ok', 
+    res.json({
+      status: 'ok',
       database: 'disconnected',
       error: err.message,
-      timestamp: new Date().toISOString() 
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -136,7 +136,7 @@ app.get('/api/test-asset', (req, res) => {
   const fs = require('fs');
   const buildPath = path.join(process.cwd(), 'dist');
   const assetPath = path.join(buildPath, 'assets', 'index-DmTW-UjC.js');
-  
+
   try {
     if (fs.existsSync(assetPath)) {
       const stats = fs.statSync(assetPath);
@@ -192,11 +192,11 @@ app.get('/api/debug-full', async (req, res) => {
   const buildPath = path.join(process.cwd(), 'dist');
   const jsPath = path.join(buildPath, 'assets', 'index-DmTW-UjC.js');
   const cssPath = path.join(buildPath, 'assets', 'index-rWHT4jOk.css');
-  
+
   const results = {
     hypotheses: {
       H1: 'Static middleware route order',
-      H2: 'Asset path resolution failure', 
+      H2: 'Asset path resolution failure',
       H3: 'MIME type issue',
       H4: 'React app crashes',
       H5: 'Request blocked by middleware'
@@ -215,7 +215,7 @@ app.get('/api/debug-full', async (req, res) => {
       assetCss: '/assets/index-rWHT4jOk.css'
     }
   };
-  
+
   res.json(results);
 });
 // #endregion
@@ -226,10 +226,10 @@ app.get('/api/debug-static', (req, res) => {
   const buildPath = path.join(process.cwd(), 'dist');
   const indexPath = path.join(buildPath, 'index.html');
   const assetsPath = path.join(buildPath, 'assets');
-  
+
   let indexContent = '';
   let assetsFiles = [];
-  
+
   try {
     if (fs.existsSync(indexPath)) {
       indexContent = fs.readFileSync(indexPath, 'utf8');
@@ -244,14 +244,14 @@ app.get('/api/debug-static', (req, res) => {
         fullHtml: indexContent.substring(0, 500) // First 500 chars
       };
     }
-    
+
     if (fs.existsSync(assetsPath)) {
       assetsFiles = fs.readdirSync(assetsPath);
     }
   } catch (e) {
     indexContent = { error: e.message };
   }
-  
+
   res.json({
     buildPath,
     indexPath,
@@ -274,7 +274,7 @@ app.get('/api/debug-paths', (req, res) => {
     path.join(process.cwd(), 'public'),
     process.cwd()
   ];
-  
+
   const results = {};
   possiblePaths.forEach(p => {
     try {
@@ -287,14 +287,14 @@ app.get('/api/debug-paths', (req, res) => {
       results[p] = { error: e.message };
     }
   });
-  
+
   // Also check root directory contents
   try {
     results['cwd_contents'] = fs.readdirSync(process.cwd());
   } catch (e) {
     results['cwd_contents'] = { error: e.message };
   }
-  
+
   // Check what the server is actually using
   if (process.env.NODE_ENV === 'production') {
     let buildPath = possiblePaths[0];
@@ -306,7 +306,7 @@ app.get('/api/debug-paths', (req, res) => {
     }
     results['server_using'] = buildPath;
   }
-  
+
   res.json(results);
 });
 
@@ -315,7 +315,7 @@ app.get('/api/debug-env', (req, res) => {
   // Get all env var keys (not values for security)
   const envKeys = Object.keys(process.env);
   const dbRelated = envKeys.filter(k => k.includes('DB') || k.includes('JWT') || k.includes('NODE') || k.includes('PORT'));
-  
+
   res.json({
     totalEnvVars: envKeys.length,
     dbRelatedKeys: dbRelated,
@@ -352,72 +352,73 @@ app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Serve static files from React build in production
-if (process.env.NODE_ENV === 'production') {
-  // Try multiple possible build paths
-  const possiblePaths = [
-    path.join(process.cwd(), 'dist'),           // root/dist
-    path.join(__dirname, '../../dist'),         // server/../../dist
-    process.cwd()                               // root (fallback)
-  ];
-  
-  const fs = require('fs');
-  let buildPath = possiblePaths[0];
-  let found = false;
-  for (const p of possiblePaths) {
-    if (fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))) {
+// Serve static files from React build
+// Look for dist folder regardless of NODE_ENV for robustness
+const possiblePaths = [
+  path.join(process.cwd(), 'dist'),           // root/dist
+  path.join(__dirname, '../../dist'),         // server/../../dist
+  process.cwd()                               // root (fallback)
+];
+
+let buildPath = possiblePaths[0];
+let found = false;
+for (const p of possiblePaths) {
+  if (fs.existsSync(p)) {
+    if (fs.existsSync(path.join(p, 'index.dev.html')) || fs.existsSync(path.join(p, 'index.html'))) {
       buildPath = p;
       found = true;
       console.log('✓ Serving frontend from:', buildPath);
       break;
     }
   }
-  
-  if (!found) {
-    console.error('✗ ERROR: Frontend build not found! Checked paths:', possiblePaths);
-  }
-  
-  // #region agent log - H1/H3: Log when static middleware processes a request
-  app.use((req, res, next) => {
-    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
-      const filePath = path.join(buildPath, req.path);
-      const exists = fs.existsSync(filePath);
+}
+
+if (!found) {
+  console.log('! Frontend build not found in common paths, will attempt to serve current directory if index.html exists');
+}
+
+// Log when static middleware processes a request (helpful for debugging blank page)
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+    const filePath = path.join(buildPath, req.path);
+    const exists = fs.existsSync(filePath);
+    if (!exists && !req.path.includes('.')) {
+      // It's likely a React Router path, let it pass to catch-all
+    } else {
       console.log(`[STATIC] ${req.path} -> ${filePath} (exists: ${exists})`);
     }
-    next();
-  });
-  // #endregion
-  
-  // Serve static assets (JS, CSS, images, etc.) - must come before catch-all route
-  app.use(express.static(buildPath, {
-    dotfiles: 'ignore',
-    maxAge: '1d',
-    etag: true,
-    lastModified: true
-  }));
-  
-  // Handle React Router - serve index.html for all non-API routes
-  // This must be LAST, after all other routes
-  // express.static above will handle /assets/ requests before this route
-  app.get('*', (req, res) => {
-    // #region agent log - H1: Log when catch-all receives a request
-    console.log(`[CATCH-ALL] ${req.path} (should only see non-asset paths here)`);
-    // #endregion
-    
-    // Don't serve index.html for API routes
-    if (req.path.startsWith('/api')) {
-      return res.status(404).json({ error: 'Endpoint not found' });
-    }
-    
-    const indexPath = path.join(buildPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      console.error('✗ ERROR: index.html not found at:', indexPath);
-      res.status(500).send('Frontend build not found. Please check server logs.');
-    }
-  });
-}
+  }
+  next();
+});
+
+// Serve static assets (JS, CSS, images, etc.)
+app.use(express.static(buildPath, {
+  dotfiles: 'ignore',
+  maxAge: '1d',
+  etag: true,
+  lastModified: true
+}));
+
+// Handle React Router - serve index.html (or index.dev.html) for all non-API routes
+app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'Endpoint not found' });
+  }
+
+  // Prefer index.dev.html to bypass Apache/Hostinger interception if it exists
+  const indexDevPath = path.join(buildPath, 'index.dev.html');
+  const indexPath = path.join(buildPath, 'index.html');
+
+  if (fs.existsSync(indexDevPath)) {
+    res.sendFile(indexDevPath);
+  } else if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    console.error('✗ ERROR: No index file found in:', buildPath);
+    res.status(500).send('Frontend build not found. Please check server logs or run npm run build.');
+  }
+});
 
 // Error handler
 app.use((err, req, res, next) => {

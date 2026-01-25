@@ -82,12 +82,17 @@ const BrowsePage = () => {
   // Fetch products from database
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [searchQuery, selectedCategory, selectedLocation, selectedSort]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
-      const result = await productsApi.getAll({ sort: 'recent', limit: 100 });
+      const result = await productsApi.getAll({
+        search: searchQuery,
+        category: selectedCategory === "all" ? undefined : selectedCategory,
+        sort: selectedSort,
+        limit: 100
+      });
       setProducts(result.products || []);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -106,23 +111,8 @@ const BrowsePage = () => {
     setSearchParams(searchParams);
   };
 
-  const filteredProducts = products.filter((product) => {
-    const query = searchQuery.toLowerCase().trim();
-    const matchesSearch = query
-      ? product.title.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query) ||
-        (product.college?.toLowerCase().includes(query) ?? false)
-      : true;
-    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (selectedSort === "price-low") return a.price - b.price;
-    if (selectedSort === "price-high") return b.price - a.price;
-    // Default: most recent
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  // Backend handles search, but we can do a secondary local filter for location if needed
+  // UI Grid: Use 2 columns on mobile for better density
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -184,11 +174,10 @@ const BrowsePage = () => {
                     variant={selectedCategory === filter.id ? "secondary" : "ghost"}
                     size="sm"
                     onClick={() => handleCategoryChange(filter.id)}
-                    className={`whitespace-nowrap gap-2 ${
-                      isGiveaway && selectedCategory !== filter.id
-                        ? "bg-mint/20 text-mint-dark border border-mint/40 hover:bg-mint/30"
-                        : ""
-                    }`}
+                    className={`whitespace-nowrap gap-2 ${isGiveaway && selectedCategory !== filter.id
+                      ? "bg-mint/20 text-mint-dark border border-mint/40 hover:bg-mint/30"
+                      : ""
+                      }`}
                   >
                     <Icon className={`w-4 h-4 ${isGiveaway ? "animate-pulse" : ""}`} />
                     {filter.label}
@@ -268,7 +257,7 @@ const BrowsePage = () => {
           <div className="container">
             <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground">
-                <span className="font-semibold text-foreground">{sortedProducts.length}</span> items found
+                <span className="font-semibold text-foreground">{products.length}</span> items found
                 {selectedCategory !== "all" && (
                   <span> in {categoryFilters.find(c => c.id === selectedCategory)?.label}</span>
                 )}
@@ -282,9 +271,9 @@ const BrowsePage = () => {
               <div className="flex items-center justify-center py-16">
                 <Loader2 className="w-8 h-8 animate-spin text-secondary" />
               </div>
-            ) : sortedProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {sortedProducts.map((product, index) => {
+            ) : products.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {products.map((product, index) => {
                   const validCondition = ["like-new", "good", "well-used"].includes(product.condition)
                     ? product.condition as "like-new" | "good" | "well-used"
                     : "good";

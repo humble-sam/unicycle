@@ -99,7 +99,7 @@ const ProductDetailPage = () => {
   const [reportDescription, setReportDescription] = useState('');
   const [reporting, setReporting] = useState(false);
   const { toast } = useToast();
-  
+
   // Touch swipe state
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -152,7 +152,7 @@ const ProductDetailPage = () => {
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
-    
+
     if (isLeftSwipe && images.length > 1) {
       nextImage();
     }
@@ -215,7 +215,7 @@ const ProductDetailPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div 
+            <div
               className="relative aspect-square rounded-2xl overflow-hidden bg-muted touch-pan-y"
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
@@ -262,11 +262,10 @@ const ProductDetailPage = () => {
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      index === currentImageIndex
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
                         ? "border-secondary ring-2 ring-secondary/20"
                         : "border-transparent hover:border-border"
-                    }`}
+                      }`}
                   >
                     <img
                       src={img}
@@ -383,51 +382,58 @@ const ProductDetailPage = () => {
                 <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground text-center">
                   This is your listing
                 </div>
-              ) : !currentUserId ? (
-                // User not logged in - show login prompt
-                <div className="space-y-3">
-                  <div className="p-4 rounded-lg bg-muted/50 border border-border text-center">
-                    <LogIn className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Sign in to contact the seller
-                    </p>
-                    <Button
-                      variant="sell"
-                      className="w-full gap-2"
-                      onClick={() => navigate("/auth")}
-                    >
-                      <LogIn className="w-4 h-4" />
-                      Sign In to Contact
-                    </Button>
-                  </div>
-                </div>
               ) : (
-                // User logged in - show contact buttons
                 <div className="space-y-3">
-                  {product.seller_phone && (
-                    <Button
-                      variant="sell"
-                      className="w-full gap-2"
-                      onClick={() => window.open(`tel:${product.seller_phone}`, "_blank")}
-                    >
-                      <Phone className="w-4 h-4" />
-                      Call Seller
-                    </Button>
-                  )}
                   {product.seller_phone ? (
-                    <Button
-                      variant="outline"
-                      className="w-full gap-2"
-                      onClick={() => {
-                        const message = encodeURIComponent(
-                          `Hi! I'm interested in your listing "${product.title}" on UniCycle.`
-                        );
-                        window.open(`https://wa.me/${product.seller_phone!.replace(/\D/g, "")}?text=${message}`, "_blank");
-                      }}
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      WhatsApp
-                    </Button>
+                    <>
+                      <Button
+                        variant="sell"
+                        className="w-full gap-2"
+                        onClick={async () => {
+                          try {
+                            await productsApi.contact(product.id);
+                            window.open(`tel:${product.seller_phone}`, "_blank");
+                            toast({
+                              title: "Contacting Seller",
+                              description: "Wait for response, the product is delisted now.",
+                            });
+                            // Refresh product state to show it's inactive if needed
+                            setProduct(prev => prev ? { ...prev, is_active: false } : null);
+                          } catch (error) {
+                            window.open(`tel:${product.seller_phone}`, "_blank");
+                          }
+                        }}
+                      >
+                        <Phone className="w-4 h-4" />
+                        Call Seller
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full gap-2"
+                        onClick={async () => {
+                          try {
+                            await productsApi.contact(product.id);
+                            const message = encodeURIComponent(
+                              `Hi! I'm interested in your listing "${product.title}" on UniCycle.`
+                            );
+                            window.open(`https://wa.me/${product.seller_phone!.replace(/\D/g, "")}?text=${message}`, "_blank");
+                            toast({
+                              title: "Message Sent",
+                              description: "Wait for response, the product is delisted now.",
+                            });
+                            setProduct(prev => prev ? { ...prev, is_active: false } : null);
+                          } catch (error) {
+                            const message = encodeURIComponent(
+                              `Hi! I'm interested in your listing "${product.title}" on UniCycle.`
+                            );
+                            window.open(`https://wa.me/${product.seller_phone!.replace(/\D/g, "")}?text=${message}`, "_blank");
+                          }
+                        }}
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        WhatsApp
+                      </Button>
+                    </>
                   ) : (
                     <div className="p-3 rounded-lg bg-muted text-sm text-muted-foreground text-center">
                       Seller has not provided contact info

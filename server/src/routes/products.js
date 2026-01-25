@@ -55,7 +55,7 @@ const searchKeywordMappings = {
   'asus': 'electronics',
   'acer': 'electronics',
   'inspiron': 'electronics',
-  
+
   // Books & Stationary
   'book': 'books-stationary',
   'books': 'books-stationary',
@@ -72,7 +72,7 @@ const searchKeywordMappings = {
   'fiction': 'books-stationary',
   'study': 'books-stationary',
   'material': 'books-stationary',
-  
+
   // Furniture
   'furniture': 'furniture',
   'chair': 'furniture',
@@ -87,7 +87,7 @@ const searchKeywordMappings = {
   'lamp': 'furniture',
   'fan': 'furniture',
   'mirror': 'furniture',
-  
+
   // Kitchen Items
   'kitchen': 'kitchen-items',
   'utensil': 'kitchen-items',
@@ -107,7 +107,7 @@ const searchKeywordMappings = {
   'induction': 'kitchen-items',
   'cooker': 'kitchen-items',
   'bottle': 'kitchen-items',
-  
+
   // Vehicles
   'vehicle': 'vehicles',
   'vehicles': 'vehicles',
@@ -122,13 +122,53 @@ const searchKeywordMappings = {
   'hero': 'vehicles',
   'tvs': 'vehicles',
   'car': 'vehicles',
-  
+
   // Giveaways
   'free': 'giveaways',
   'giveaway': 'giveaways',
   'donate': 'giveaways',
-  'donation': 'giveaways'
+  'donation': 'giveaways',
+
+  // High-level categories
+  'electronics': 'electronics',
+  'gadget': 'electronics',
+  'books': 'books-stationary',
+  'study': 'books-stationary',
+  'furniture': 'furniture',
+  'room': 'furniture',
+  'kitchen': 'kitchen-items',
+  'cooking': 'kitchen-items',
+  'vehicle': 'vehicles',
+  'cycle': 'vehicles'
 };
+
+// PATCH /api/products/:id/contact - Handle contact event (auto-delist)
+router.patch('/:id/contact', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if product exists and is active
+    const [products] = await db.query('SELECT user_id, is_active FROM products WHERE id = ?', [id]);
+
+    if (products.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    // Update product to inactive (delist)
+    await db.query('UPDATE products SET is_active = FALSE WHERE id = ?', [id]);
+
+    // Log the contact event for analytics
+    await db.query(
+      'INSERT INTO analytics_events (id, event_type, user_id, product_id, ip_address) VALUES (?, ?, ?, ?, ?)',
+      [uuidv4(), 'product_contacted', req.user?.id || null, id, req.ip]
+    );
+
+    res.json({ success: true, message: 'Wait for response, the product is delisted now' });
+  } catch (err) {
+    console.error('Contact product error:', err);
+    res.status(500).json({ error: 'Failed to process contact request' });
+  }
+});
 
 // GET /api/products - List products with filters
 router.get('/', optionalAuth, async (req, res) => {
@@ -155,7 +195,7 @@ router.get('/', optionalAuth, async (req, res) => {
     } else {
       // Public listing - only show active products
       whereConditions.push('p.is_active = TRUE');
-      
+
       if (userId) {
         whereConditions.push('p.user_id = ?');
         params.push(userId);
@@ -175,10 +215,10 @@ router.get('/', optionalAuth, async (req, res) => {
     if (search) {
       const searchLower = search.toLowerCase().trim();
       const searchTerm = `%${search}%`;
-      
+
       // Check if search term maps to a category
       const mappedCategory = searchKeywordMappings[searchLower];
-      
+
       if (mappedCategory) {
         // Search matches a keyword - search in title, description, AND include category matches
         whereConditions.push('(p.title LIKE ? OR p.description LIKE ? OR p.category = ?)');
@@ -189,7 +229,7 @@ router.get('/', optionalAuth, async (req, res) => {
         const matchedCategories = searchWords
           .map(word => searchKeywordMappings[word])
           .filter(cat => cat);
-        
+
         if (matchedCategories.length > 0) {
           // Build condition with category matches
           const categoryPlaceholders = matchedCategories.map(() => '?').join(', ');
@@ -284,13 +324,12 @@ router.get('/:id', optionalAuth, async (req, res) => {
       );
     }
 
-    // Only return seller contact info if user is authenticated
+    // Open seller contact info to everyone (per user request)
     const responseData = {
       ...product,
       images: typeof product.images === 'string' ? JSON.parse(product.images) : product.images,
-      // Gate seller contact info behind authentication
-      seller_phone: req.user ? product.seller_phone : null,
-      seller_email: req.user ? product.seller_email : null
+      seller_phone: product.seller_phone,
+      seller_email: product.seller_email
     };
 
     res.json(responseData);

@@ -17,16 +17,16 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
-import { 
-  Laptop, 
-  BookOpen, 
-  Sofa, 
+import {
+  Laptop,
+  BookOpen,
+  Sofa,
   UtensilsCrossed,
   Car,
   Gift,
-  ArrowRight, 
-  Shield, 
-  Users, 
+  ArrowRight,
+  Shield,
+  Users,
   Zap
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -57,16 +57,16 @@ const Index = () => {
       try {
         setIsLoading(true);
         // Fetch recently listed products (limit 4)
-        const recentResult = await productsApi.getAll({ 
-          sort: 'recent', 
-          limit: 4 
+        const recentResult = await productsApi.getAll({
+          sort: 'recent',
+          limit: 4
         });
         setFeaturedProducts(recentResult.products || []);
 
         // Fetch giveaway items (limit 6)
-        const giveawayResult = await productsApi.getAll({ 
-          category: 'giveaways', 
-          limit: 6 
+        const giveawayResult = await productsApi.getAll({
+          category: 'giveaways',
+          limit: 6
         });
         setGiveawayItems(giveawayResult.products || []);
       } catch (error) {
@@ -116,20 +116,22 @@ const Index = () => {
           </div>
 
           <div className="container relative">
-            <div className="max-w-3xl mx-auto text-center">
+            <div className="max-w-4xl mx-auto text-center px-4">
               {/* Tagline */}
-              <p className="text-sm sm:text-base font-medium text-secondary mb-3 animate-fade-in tracking-wide">
-                From One Student to Another
-              </p>
-              
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground mb-4 sm:mb-6 animate-slide-up">
+              <div className="inline-block px-4 py-1.5 rounded-full bg-secondary/10 border border-secondary/20 mb-6 animate-fade-in">
+                <p className="text-xs sm:text-sm font-bold text-secondary tracking-widest uppercase">
+                  From One Student to Another
+                </p>
+              </div>
+
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-primary-foreground mb-6 animate-slide-up tracking-tight">
                 Buy & Sell Within Your
-                <span className="block text-secondary">Campus Community</span>
+                <span className="block text-secondary mt-1">Campus Community</span>
               </h1>
-              
-              <p className="text-base sm:text-lg md:text-xl text-primary-foreground/80 mb-8 sm:mb-10 px-4 sm:px-0 animate-slide-up" style={{ animationDelay: "100ms" }}>
-                Your campus marketplace for pre-loved items. Connect with fellow students 
-                and find what you need.
+
+              <p className="text-lg sm:text-xl md:text-2xl text-primary-foreground/90 mb-10 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: "100ms" }}>
+                The dedicated marketplace for verified students.
+                Connect, trade, and save within your college.
               </p>
 
               <div className="flex justify-center animate-slide-up" style={{ animationDelay: "200ms" }}>
@@ -260,11 +262,10 @@ const Index = () => {
                 <button
                   key={index}
                   onClick={() => scrollTo(index)}
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    index === current
+                  className={`h-2 rounded-full transition-all duration-300 ${index === current
                       ? "w-6 bg-mint-dark"
                       : "w-2 bg-mint/40 hover:bg-mint/60"
-                  }`}
+                    }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
               ))}

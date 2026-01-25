@@ -49,7 +49,7 @@ const ProductCard = ({
 
   return (
     <Link
-      to={`/product/${id}`}
+      to={`/products/${id}`}
       className="group bg-card rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 animate-slide-up"
       style={{ animationDelay: `${delay}ms` }}
     >
@@ -60,47 +60,46 @@ const ProductCard = ({
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute top-3 left-3 flex gap-2">
-          <Badge className={`${conditionColors[condition]} border font-medium`}>
+        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-wrap gap-1 sm:gap-2">
+          <Badge className={`${conditionColors[condition]} border text-[10px] sm:text-xs px-1.5 py-0 sm:px-2.5 sm:py-0.5 font-medium`}>
             {conditionLabels[condition]}
           </Badge>
           {negotiable && (
-            <Badge variant="outline" className="bg-background/80 backdrop-blur-sm border-border">
-              <Tag className="w-3 h-3 mr-1" />
-              Negotiable
+            <Badge variant="outline" className="bg-background/80 backdrop-blur-sm border-border text-[10px] sm:text-xs px-1.5 py-0 sm:px-2.5 sm:py-0.5">
+              <Tag className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
+              Negotiation
             </Badge>
           )}
         </div>
         <button
           onClick={handleWishlistClick}
           disabled={isLoading}
-          className={`absolute top-2 right-2 w-11 h-11 rounded-full flex items-center justify-center transition-all ${
-            isWishlisted
-              ? "bg-destructive text-destructive-foreground"
+          className={`absolute top-2 right-2 w-8 h-8 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all ${isWishlisted
+              ? "bg-destructive text-destructive-foreground shadow-md"
               : "bg-background/80 backdrop-blur-sm text-muted-foreground hover:text-destructive hover:bg-background"
-          }`}
+            }`}
         >
-          <Heart className={`w-5 h-5 ${isWishlisted ? "fill-current" : ""}`} />
+          <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isWishlisted ? "fill-current" : ""}`} />
         </button>
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <h3 className="font-semibold text-foreground mb-2 line-clamp-2 group-hover:text-secondary transition-colors">
+      <div className="p-3 sm:p-4">
+        <h3 className="font-semibold text-foreground mb-1 sm:mb-2 line-clamp-1 sm:line-clamp-2 text-sm sm:text-base group-hover:text-secondary transition-colors">
           {title}
         </h3>
-        
-        <p className="text-xl font-bold text-primary mb-3">
-          ₹{price.toLocaleString()}
+
+        <p className={`font-bold text-primary mb-2 sm:mb-3 ${price === 0 ? 'text-secondary' : ''}`}>
+          {price === 0 ? "FREE" : `₹${price.toLocaleString()}`}
         </p>
 
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5" />
-            {college}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-[10px] sm:text-sm text-muted-foreground">
+          <span className="flex items-center gap-1 truncate max-w-full">
+            <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+            <span className="truncate">{college}</span>
           </span>
           <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" />
+            <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
             {postedAt}
           </span>
         </div>

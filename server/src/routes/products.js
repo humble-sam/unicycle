@@ -459,8 +459,8 @@ router.post('/upload', authenticateToken, upload.array('images', 5), processUplo
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const urls = req.files.map(file => `${baseUrl}/uploads/products/${file.filename}`);
+    // Use relative URLs for better portability across environments
+    const urls = req.files.map(file => `/uploads/products/${file.filename}`);
 
     res.json({ urls });
   } catch (err) {

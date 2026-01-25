@@ -4,8 +4,7 @@
   "description": "Backend API for UniCycle Campus Marketplace",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/test-server.js",
-    "start:prod": "node src/index.js",
+    "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "build": "mkdir -p dist && echo 'Build complete - Node.js server ready' > dist/.build-complete"
   },

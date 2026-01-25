@@ -121,13 +121,29 @@ try {
       }
     }
 
-    app.use(express.static(buildPath, { dotfiles: 'ignore', maxAge: '1d' }));
+    // Serve static assets (JS, CSS) with cache
+    app.use(express.static(buildPath, {
+      dotfiles: 'ignore',
+      maxAge: '1d',
+      setHeaders: (res, filePath) => {
+        // Never cache HTML files
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+        }
+      }
+    }));
 
     app.get('*', (req, res) => {
       if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Endpoint not found' });
 
       const indexPath = path.join(buildPath, 'index.html');
       if (fs.existsSync(indexPath)) {
+        // Set no-cache headers for HTML
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.sendFile(indexPath);
       } else {
         res.status(500).send(`

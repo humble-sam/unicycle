@@ -142,28 +142,25 @@ const searchKeywordMappings = {
   'cycle': 'vehicles'
 };
 
-// PATCH /api/products/:id/contact - Handle contact event (auto-delist)
+// PATCH /api/products/:id/contact - Handle contact event (for analytics only, no auto-delist)
 router.patch('/:id/contact', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if product exists and is active
+    // Check if product exists
     const [products] = await db.query('SELECT user_id, is_active FROM products WHERE id = ?', [id]);
 
     if (products.length === 0) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Update product to inactive (delist)
-    await db.query('UPDATE products SET is_active = FALSE WHERE id = ?', [id]);
-
-    // Log the contact event for analytics
+    // Log the contact event for analytics (but don't delist - seller must confirm sale)
     await db.query(
       'INSERT INTO analytics_events (id, event_type, user_id, product_id, ip_address) VALUES (?, ?, ?, ?, ?)',
       [uuidv4(), 'product_contacted', req.user?.id || null, id, req.ip]
     );
 
-    res.json({ success: true, message: 'Wait for response, the product is delisted now' });
+    res.json({ success: true, message: 'Contact request logged' });
   } catch (err) {
     console.error('Contact product error:', err);
     res.status(500).json({ error: 'Failed to process contact request' });

@@ -213,34 +213,10 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     if (search) {
-      const searchLower = search.toLowerCase().trim();
-      const searchTerm = `%${search}%`;
-
-      // Check if search term maps to a category
-      const mappedCategory = searchKeywordMappings[searchLower];
-
-      if (mappedCategory) {
-        // Search matches a keyword - search in title, description, AND include category matches
-        whereConditions.push('(p.title LIKE ? OR p.description LIKE ? OR p.category = ?)');
-        params.push(searchTerm, searchTerm, mappedCategory);
-      } else {
-        // Check if any word in search maps to a category
-        const searchWords = searchLower.split(/\s+/);
-        const matchedCategories = searchWords
-          .map(word => searchKeywordMappings[word])
-          .filter(cat => cat);
-
-        if (matchedCategories.length > 0) {
-          // Build condition with category matches
-          const categoryPlaceholders = matchedCategories.map(() => '?').join(', ');
-          whereConditions.push(`(p.title LIKE ? OR p.description LIKE ? OR p.category IN (${categoryPlaceholders}))`);
-          params.push(searchTerm, searchTerm, ...matchedCategories);
-        } else {
-          // Standard search - no keyword mapping found
-          whereConditions.push('(p.title LIKE ? OR p.description LIKE ? OR p.category LIKE ?)');
-          params.push(searchTerm, searchTerm, searchTerm);
-        }
-      }
+      const searchTerm = `%${search.trim()}%`;
+      // Simple search - match title or description only
+      whereConditions.push('(p.title LIKE ? OR p.description LIKE ?)');
+      params.push(searchTerm, searchTerm);
     }
 
     let orderBy = 'p.created_at DESC';

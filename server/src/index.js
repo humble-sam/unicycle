@@ -47,7 +47,13 @@ try {
   app.use(express.json({ limit: '10mb' }));
 
   if (rateLimit) {
-    const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+    const limiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 100,
+      message: { error: 'Too many requests, please try again later' },
+      standardHeaders: true,
+      legacyHeaders: false
+    });
     app.use('/api', limiter);
   }
 } catch (e) {

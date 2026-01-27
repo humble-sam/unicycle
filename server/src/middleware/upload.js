@@ -5,11 +5,15 @@ const fs = require('fs');
 const sharp = require('sharp');
 const { fileTypeFromFile } = require('file-type');
 
+// Determine absolute base path for uploads
+// __dirname is server/src/middleware, so we go up 3 levels to get to public_html
+const UPLOADS_BASE_DIR = path.resolve(__dirname, '..', '..', '..', 'uploads');
+
 // Ensure upload directories exist
 const createUploadDirs = () => {
-  const dirs = ['uploads/products', 'uploads/avatars'];
-  dirs.forEach(dir => {
-    const fullPath = path.join(process.cwd(), dir);
+  const dirs = ['products', 'avatars'];
+  dirs.forEach(subdir => {
+    const fullPath = path.join(UPLOADS_BASE_DIR, subdir);
     if (!fs.existsSync(fullPath)) {
       fs.mkdirSync(fullPath, { recursive: true });
     }
@@ -22,7 +26,7 @@ createUploadDirs();
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const type = req.baseUrl.includes('product') ? 'products' : 'avatars';
-    cb(null, path.join(process.cwd(), `uploads/${type}`));
+    cb(null, path.join(UPLOADS_BASE_DIR, type));
   },
   filename: (req, file, cb) => {
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
@@ -81,7 +85,7 @@ const processUploadedImages = async (req, res, next) => {
 
       // Get image metadata
       const metadata = await sharp(filePath).metadata();
-      
+
       // Check dimensions
       if (metadata.width > maxWidth || metadata.height > maxHeight) {
         // Resize if too large
@@ -91,7 +95,7 @@ const processUploadedImages = async (req, res, next) => {
             withoutEnlargement: true
           })
           .toFile(filePath + '.tmp');
-        
+
         // Replace original with resized
         fs.renameSync(filePath + '.tmp', filePath);
       }
@@ -99,7 +103,7 @@ const processUploadedImages = async (req, res, next) => {
       // Optimize and compress image based on original format
       const tempPath = filePath + '.opt';
       let sharpInstance = sharp(filePath);
-      
+
       // Apply format-specific optimization
       if (fileType.mime === 'image/jpeg') {
         sharpInstance = sharpInstance.jpeg({ quality: quality, mozjpeg: true });
@@ -108,7 +112,7 @@ const processUploadedImages = async (req, res, next) => {
       } else if (fileType.mime === 'image/webp') {
         sharpInstance = sharpInstance.webp({ quality: quality });
       }
-      
+
       await sharpInstance.toFile(tempPath);
       // Replace original with optimized version
       fs.renameSync(tempPath, filePath);
@@ -154,7 +158,7 @@ const processUploadedImage = async (req, res, next) => {
 
     // Get image metadata
     const metadata = await sharp(filePath).metadata();
-    
+
     // Check dimensions
     if (metadata.width > maxWidth || metadata.height > maxHeight) {
       // Resize if too large
@@ -164,7 +168,7 @@ const processUploadedImage = async (req, res, next) => {
           withoutEnlargement: true
         })
         .toFile(filePath + '.tmp');
-      
+
       // Replace original with resized
       fs.renameSync(filePath + '.tmp', filePath);
     }
@@ -172,7 +176,7 @@ const processUploadedImage = async (req, res, next) => {
     // Optimize and compress image based on original format
     const tempPath = filePath + '.opt';
     let sharpInstance = sharp(filePath);
-    
+
     // Apply format-specific optimization
     if (fileType.mime === 'image/jpeg') {
       sharpInstance = sharpInstance.jpeg({ quality: quality, mozjpeg: true });
@@ -181,7 +185,7 @@ const processUploadedImage = async (req, res, next) => {
     } else if (fileType.mime === 'image/webp') {
       sharpInstance = sharpInstance.webp({ quality: quality });
     }
-    
+
     await sharpInstance.toFile(tempPath);
     // Replace original with optimized version
     fs.renameSync(tempPath, filePath);

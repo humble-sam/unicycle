@@ -4,11 +4,14 @@
 
 set -e
 
-echo "🚀 Running deploy script..."
+echo "ðŸš€ Running deploy script at $(date)..." >> deploy.log
 
 # Get the directory where the script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+
+# Redirect all output to log file
+exec > >(tee -a deploy.log) 2>&1
 
 # 1. Create/update static assets symlink
 # Remove any existing assets (whether it's a file, directory, or broken symlink)

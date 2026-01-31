@@ -9,13 +9,20 @@ const { fileTypeFromFile } = require('file-type');
 // __dirname is server/src/middleware, so we go up 3 levels to get to public_html
 const UPLOADS_BASE_DIR = path.resolve(__dirname, '..', '..', '..', 'uploads');
 
+// Debug logging for upload path
+console.log('[UPLOAD DEBUG] __dirname:', __dirname);
+console.log('[UPLOAD DEBUG] UPLOADS_BASE_DIR:', UPLOADS_BASE_DIR);
+console.log('[UPLOAD DEBUG] UPLOADS_BASE_DIR exists:', fs.existsSync(UPLOADS_BASE_DIR));
+
 // Ensure upload directories exist
 const createUploadDirs = () => {
   const dirs = ['products', 'avatars'];
   dirs.forEach(subdir => {
     const fullPath = path.join(UPLOADS_BASE_DIR, subdir);
+    console.log('[UPLOAD DEBUG] Ensuring directory exists:', fullPath);
     if (!fs.existsSync(fullPath)) {
       fs.mkdirSync(fullPath, { recursive: true });
+      console.log('[UPLOAD DEBUG] Created directory:', fullPath);
     }
   });
 };
@@ -26,10 +33,13 @@ createUploadDirs();
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const type = req.baseUrl.includes('product') ? 'products' : 'avatars';
-    cb(null, path.join(UPLOADS_BASE_DIR, type));
+    const destPath = path.join(UPLOADS_BASE_DIR, type);
+    console.log('[UPLOAD DEBUG] Saving file to:', destPath);
+    cb(null, destPath);
   },
   filename: (req, file, cb) => {
     const uniqueName = `${uuidv4()}${path.extname(file.originalname)}`;
+    console.log('[UPLOAD DEBUG] Generated filename:', uniqueName);
     cb(null, uniqueName);
   }
 });

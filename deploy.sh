@@ -31,6 +31,7 @@ fi
 
 # 2. Copy index.html from dist to root
 if [ -f "dist/index.html" ]; then
+    rm -f index.html
     cp dist/index.html index.html
     echo "✅ Copied dist/index.html to index.html"
 else

@@ -70,6 +70,7 @@ const upload = multer({
 });
 
 // Post-process uploaded images: validate magic numbers, compress, and optimize
+// If processing fails, keep original files instead of deleting them
 const processUploadedImages = async (req, res, next) => {
   if (!req.files || req.files.length === 0) {
     return next();
@@ -79,70 +80,79 @@ const processUploadedImages = async (req, res, next) => {
   const maxHeight = parseInt(process.env.MAX_IMAGE_HEIGHT) || 2000;
   const quality = parseInt(process.env.IMAGE_QUALITY) || 85;
 
-  try {
-    const processedFiles = [];
+  const processedFiles = [];
 
-    for (const file of req.files) {
-      const filePath = file.path;
+  for (const file of req.files) {
+    const filePath = file.path;
+    console.log('[UPLOAD] Processing file:', filePath);
 
+    try {
       // Validate magic number (actual file type)
       const fileType = await fileTypeFromFile(filePath);
       if (!fileType || !['image/jpeg', 'image/png', 'image/webp'].includes(fileType.mime)) {
-        // Delete invalid file
+        console.log('[UPLOAD] Invalid file type, deleting:', filePath);
         fs.unlinkSync(filePath);
-        throw new Error(`Invalid file type detected for ${file.originalname}. Only JPEG, PNG, and WebP are allowed.`);
+        continue; // Skip this file but don't fail entire upload
       }
 
-      // Get image metadata
-      const metadata = await sharp(filePath).metadata();
+      // Try to process with sharp (optional - if it fails, keep original)
+      try {
+        // Get image metadata
+        const metadata = await sharp(filePath).metadata();
 
-      // Check dimensions
-      if (metadata.width > maxWidth || metadata.height > maxHeight) {
-        // Resize if too large
-        await sharp(filePath)
-          .resize(maxWidth, maxHeight, {
-            fit: 'inside',
-            withoutEnlargement: true
-          })
-          .toFile(filePath + '.tmp');
+        // Check dimensions
+        if (metadata.width > maxWidth || metadata.height > maxHeight) {
+          await sharp(filePath)
+            .resize(maxWidth, maxHeight, {
+              fit: 'inside',
+              withoutEnlargement: true
+            })
+            .toFile(filePath + '.tmp');
+          fs.renameSync(filePath + '.tmp', filePath);
+          console.log('[UPLOAD] Resized image:', filePath);
+        }
 
-        // Replace original with resized
-        fs.renameSync(filePath + '.tmp', filePath);
+        // Optimize and compress image
+        const tempPath = filePath + '.opt';
+        let sharpInstance = sharp(filePath);
+
+        if (fileType.mime === 'image/jpeg') {
+          sharpInstance = sharpInstance.jpeg({ quality: quality, mozjpeg: true });
+        } else if (fileType.mime === 'image/png') {
+          sharpInstance = sharpInstance.png({ quality: quality, compressionLevel: 9 });
+        } else if (fileType.mime === 'image/webp') {
+          sharpInstance = sharpInstance.webp({ quality: quality });
+        }
+
+        await sharpInstance.toFile(tempPath);
+        fs.renameSync(tempPath, filePath);
+        console.log('[UPLOAD] Optimized image:', filePath);
+      } catch (sharpError) {
+        // Sharp processing failed - keep original file
+        console.log('[UPLOAD] Sharp processing failed, keeping original:', sharpError.message);
+        // Clean up any temp files
+        if (fs.existsSync(filePath + '.tmp')) fs.unlinkSync(filePath + '.tmp');
+        if (fs.existsSync(filePath + '.opt')) fs.unlinkSync(filePath + '.opt');
       }
-
-      // Optimize and compress image based on original format
-      const tempPath = filePath + '.opt';
-      let sharpInstance = sharp(filePath);
-
-      // Apply format-specific optimization
-      if (fileType.mime === 'image/jpeg') {
-        sharpInstance = sharpInstance.jpeg({ quality: quality, mozjpeg: true });
-      } else if (fileType.mime === 'image/png') {
-        sharpInstance = sharpInstance.png({ quality: quality, compressionLevel: 9 });
-      } else if (fileType.mime === 'image/webp') {
-        sharpInstance = sharpInstance.webp({ quality: quality });
-      }
-
-      await sharpInstance.toFile(tempPath);
-      // Replace original with optimized version
-      fs.renameSync(tempPath, filePath);
 
       processedFiles.push(file);
+      console.log('[UPLOAD] File processed successfully:', filePath);
+    } catch (error) {
+      console.error('[UPLOAD] Error processing file:', filePath, error.message);
+      // Keep the file even if processing failed
+      if (fs.existsSync(filePath)) {
+        processedFiles.push(file);
+        console.log('[UPLOAD] Keeping file despite error:', filePath);
+      }
     }
-
-    req.files = processedFiles;
-    next();
-  } catch (error) {
-    // Clean up any uploaded files on error
-    if (req.files) {
-      req.files.forEach(file => {
-        if (fs.existsSync(file.path)) {
-          fs.unlinkSync(file.path);
-        }
-      });
-    }
-    return res.status(400).json({ error: error.message || 'Failed to process images' });
   }
+
+  if (processedFiles.length === 0) {
+    return res.status(400).json({ error: 'No valid images uploaded' });
+  }
+
+  req.files = processedFiles;
+  next();
 };
 
 // Process single uploaded image (for avatars)

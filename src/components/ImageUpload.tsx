@@ -63,9 +63,9 @@ const ImageUpload = ({ userId, images, onImagesChange, maxImages = 5 }: ImageUpl
           continue;
         }
 
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} is too large. Max 5MB allowed.`);
+        // Validate file size (max 15MB to support camera photos)
+        if (file.size > 15 * 1024 * 1024) {
+          toast.error(`${file.name} is too large. Max 15MB allowed.`);
           continue;
         }
 
@@ -81,7 +81,7 @@ const ImageUpload = ({ userId, images, onImagesChange, maxImages = 5 }: ImageUpl
       }
     } catch (error: any) {
       console.error("Upload error:", error);
-      
+
       // Provide more specific error messages
       if (error.message?.includes("401") || error.message?.includes("token") || error.message?.includes("auth")) {
         toast.error("Session expired. Please sign in again.");
@@ -89,8 +89,8 @@ const ImageUpload = ({ userId, images, onImagesChange, maxImages = 5 }: ImageUpl
         toast.error("Network error. Please check your connection and try again.");
         // Save failed files for retry
         setFailedFiles(Array.from(files || []));
-      } else if (error.message?.includes("size") || error.message?.includes("large")) {
-        toast.error("File too large. Please use images under 5MB.");
+      } else if (error.message?.includes("size") || error.message?.includes("large") || error.message?.includes("limit")) {
+        toast.error("File too large. Please use images under 15MB.");
       } else {
         toast.error(error.message || "Failed to upload images. Please try again.");
       }
@@ -105,7 +105,7 @@ const ImageUpload = ({ userId, images, onImagesChange, maxImages = 5 }: ImageUpl
 
   const handleRetryFailed = async () => {
     if (failedFiles.length === 0) return;
-    
+
     setIsUploading(true);
     setUploadProgress("Retrying upload...");
 

@@ -10,8 +10,8 @@ echo "ðŸš€ Running deploy script at $(date)..." >> deploy.log
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Redirect all output to log file
-exec > >(tee -a deploy.log) 2>&1
+# Redirect all output to log file (simple append, no tee to avoid /dev/fd issues)
+exec >> deploy.log 2>&1
 
 # 0. Ensure git hooks are configured (Self-healing)
 git config core.hooksPath .githooks

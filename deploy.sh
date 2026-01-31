@@ -11,9 +11,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # 1. Create/update static assets symlink
-if [ -L "assets" ]; then
-    rm assets
-fi
+# Remove any existing assets (whether it's a file, directory, or broken symlink)
+rm -rf assets 2>/dev/null || true
 if [ -d "dist/assets" ]; then
     ln -s dist/assets assets
     echo "✅ Created symlink: assets -> dist/assets"

@@ -13,6 +13,12 @@ cd "$SCRIPT_DIR"
 # Redirect all output to log file
 exec > >(tee -a deploy.log) 2>&1
 
+# 0. Ensure git hooks are configured (Self-healing)
+git config core.hooksPath .githooks
+chmod +x .githooks/post-merge
+echo "✅ Enforced git hooks configuration"
+
+
 # 1. Create/update static assets symlink
 # Remove any existing assets (whether it's a file, directory, or broken symlink)
 rm -rf assets 2>/dev/null || true

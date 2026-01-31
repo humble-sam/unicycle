@@ -9,9 +9,9 @@ const Footer = () => {
           {/* Brand */}
           <div className="col-span-2 sm:col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <img 
-                src="/unicycle-logo.svg" 
-                alt="UniCycle" 
+              <img
+                src="/unicycle-logo.svg?v=2"
+                alt="UniCycle"
                 className="w-9 h-9 rounded-xl"
               />
               <span className="text-xl font-bold text-primary-foreground tracking-tight">

@@ -47,9 +47,9 @@ const Header = () => {
       <div className="container flex h-16 items-center">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-          <img 
-            src="/unicycle-logo.svg" 
-            alt="UniCycle" 
+          <img
+            src="/unicycle-logo.svg?v=2"
+            alt="UniCycle"
             className="w-9 h-9 rounded-xl shadow-md group-hover:shadow-lg transition-shadow"
           />
           <span className="text-xl font-bold text-foreground tracking-tight">
@@ -61,33 +61,29 @@ const Header = () => {
         <nav className="hidden md:flex items-center justify-center gap-8 flex-1 mx-8">
           <Link
             to="/"
-            className={`text-sm font-medium transition-colors hover:text-secondary ${
-              isActive("/") ? "text-secondary" : "text-muted-foreground"
-            }`}
+            className={`text-sm font-medium transition-colors hover:text-secondary ${isActive("/") ? "text-secondary" : "text-muted-foreground"
+              }`}
           >
             Home
           </Link>
           <Link
             to="/browse"
-            className={`text-sm font-medium transition-colors hover:text-secondary ${
-              isActive("/browse") ? "text-secondary" : "text-muted-foreground"
-            }`}
+            className={`text-sm font-medium transition-colors hover:text-secondary ${isActive("/browse") ? "text-secondary" : "text-muted-foreground"
+              }`}
           >
             Browse
           </Link>
           <Link
             to="/terms"
-            className={`text-sm font-medium transition-colors hover:text-secondary ${
-              isActive("/terms") ? "text-secondary" : "text-muted-foreground"
-            }`}
+            className={`text-sm font-medium transition-colors hover:text-secondary ${isActive("/terms") ? "text-secondary" : "text-muted-foreground"
+              }`}
           >
             Terms & Conditions
           </Link>
           <Link
             to="/privacy"
-            className={`text-sm font-medium transition-colors hover:text-secondary ${
-              isActive("/privacy") ? "text-secondary" : "text-muted-foreground"
-            }`}
+            className={`text-sm font-medium transition-colors hover:text-secondary ${isActive("/privacy") ? "text-secondary" : "text-muted-foreground"
+              }`}
           >
             Privacy Policy
           </Link>

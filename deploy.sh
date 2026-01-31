@@ -29,9 +29,16 @@ else
     echo "⚠️  Warning: dist/index.html not found. Run build first."
 fi
 
-# 3. Ensure uploads directories exist
-mkdir -p uploads/products uploads/avatars
-echo "✅ Ensured uploads directories exist"
+# 3. Ensure uploads directories exist (CRITICAL: never delete these!)
+# User-uploaded images are stored here and must persist across deployments
+if [ ! -d "uploads" ]; then
+    mkdir -p uploads/products uploads/avatars
+    echo "✅ Created uploads directories"
+else
+    # Just ensure subdirectories exist, don't touch existing files
+    mkdir -p uploads/products uploads/avatars
+    echo "✅ Verified uploads directories exist ($(ls uploads/products 2>/dev/null | wc -l) product images)"
+fi
 
 # 4. Restart Passenger (touch restart file)
 if [ -d "tmp" ]; then

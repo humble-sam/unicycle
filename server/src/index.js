@@ -73,6 +73,36 @@ app.get('/health', (req, res) => {
   });
 });
 
+// 5.5. Debug endpoint for upload path diagnosis
+app.get('/debug/upload-path', (req, res) => {
+  const path = require('path');
+  const fs = require('fs');
+
+  // Simulate the path calculation from upload.js middleware
+  const middlewareDirname = path.resolve(__dirname, 'middleware');
+  const uploadsBase = path.resolve(middlewareDirname, '..', '..', '..', 'uploads');
+  const productsPath = path.join(uploadsBase, 'products');
+
+  let productsContents = [];
+  try {
+    productsContents = fs.readdirSync(productsPath);
+  } catch (e) {
+    productsContents = [`Error reading: ${e.message}`];
+  }
+
+  res.json({
+    cwd: process.cwd(),
+    __dirname: __dirname,
+    middlewareDirname,
+    uploadsBase,
+    uploadsBaseExists: fs.existsSync(uploadsBase),
+    productsPath,
+    productsPathExists: fs.existsSync(productsPath),
+    productsContents,
+    fileCount: productsContents.length
+  });
+});
+
 // 6. Safe Route Loading Helper
 const loadRoute = (pathStr) => {
   try {

@@ -210,10 +210,22 @@ router.get('/', optionalAuth, async (req, res) => {
     }
 
     if (search) {
+      const lowerSearch = search.trim().toLowerCase();
       const searchTerm = `%${search.trim()}%`;
-      // Simple search - match title or description only
-      whereConditions.push('(p.title LIKE ? OR p.description LIKE ?)');
-      params.push(searchTerm, searchTerm);
+
+      let searchClause = '(p.title LIKE ? OR p.description LIKE ?';
+      const searchParams = [searchTerm, searchTerm];
+
+      // Check if the search term maps to a specific category
+      // This helps when users search for "laptop" but the title is "HP Victus" (category: electronics)
+      if (searchKeywordMappings[lowerSearch]) {
+        searchClause += ' OR p.category = ?';
+        searchParams.push(searchKeywordMappings[lowerSearch]);
+      }
+
+      searchClause += ')';
+      whereConditions.push(searchClause);
+      params.push(...searchParams);
     }
 
     let orderBy = 'p.created_at DESC';
@@ -229,22 +241,24 @@ router.get('/', optionalAuth, async (req, res) => {
         pr.college as seller_college
       FROM products p
       LEFT JOIN profiles pr ON p.user_id = pr.user_id
-      WHERE ${whereConditions.join(' AND ')}
+      WHERE ${whereConditions.length > 0 ? whereConditions.join(' AND ') : '1=1'}
       ORDER BY ${orderBy}
       LIMIT ? OFFSET ?
     `;
 
-    params.push(parseInt(limit), parseInt(offset));
+    // Add pagination params for the main query
+    const mainQueryParams = [...params, parseInt(limit), parseInt(offset)];
 
-    const [products] = await db.query(sql, params);
+    const [products] = await db.query(sql, mainQueryParams);
 
-    // Get total count
+    // Get total count (using the same where conditions, but without limit/offset)
     const countSql = `
       SELECT COUNT(*) as total
       FROM products p
-      WHERE ${whereConditions.slice(0, -2).join(' AND ') || '1=1'}
+      WHERE ${whereConditions.length > 0 ? whereConditions.join(' AND ') : '1=1'}
     `;
-    const [countResult] = await db.query(countSql, params.slice(0, -2));
+    // Use the original params (without limit/offset) for the count query
+    const [countResult] = await db.query(countSql, params);
 
     res.json({
       products: products.map(p => ({

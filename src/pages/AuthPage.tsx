@@ -24,6 +24,18 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 const colleges = [
+  "Lakshmi Narain College of Technology (LNCT) Bhopal",
+  "Rajiv Gandhi Proudyogiki Vishwavidyalaya (R.G.P.V) Bhopal",
+  "Oriental College of Technology Bhopal(OCT)",
+  "Technocrats Institute of Technology (TIT) Bhopal",
+  "Sagar Institute of Research & Technology (SIRT) Bhopal",
+  "People's University Bhopal",
+  "Maulana Azad National Institute of Technology(MNIT)",
+  "IIIT Bhopal",
+  "Barkatullah University Bhopal",
+  "AIMS Bhopal",
+  "RKDF University Bhopal",
+  "Madhyanchal Professional University Bhopal",
   "University of Delhi — Delhi",
   "University of Mumbai — Mumbai",
   "Savitribai Phule Pune University — Pune",
@@ -162,7 +174,7 @@ const AuthPage = () => {
         // If it fails, assume enabled (fail open)
       }
     };
-    
+
     checkFeatures();
   }, []);
 
@@ -266,7 +278,7 @@ const AuthPage = () => {
               </AlertDescription>
             </Alert>
           )}
-          
+
           {isLogin && !loginEnabled && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
@@ -470,7 +482,7 @@ const AuthPage = () => {
                   <Input
                     id="password"
                     type="password"
-                    placeholder={isLogin ? "Enter your password" : "Create a strong password (min 6 chars)"}
+                    placeholder={isLogin ? "Enter your password" : "min 6 characters"}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="pl-10"
@@ -480,11 +492,11 @@ const AuthPage = () => {
               </div>
 
               {/* Submit Button */}
-              <Button 
-                type="submit" 
-                variant="sell" 
-                className="w-full" 
-                size="lg" 
+              <Button
+                type="submit"
+                variant="sell"
+                className="w-full"
+                size="lg"
                 disabled={isLoading || (!isLogin && !registrationEnabled) || (isLogin && !loginEnabled)}
               >
                 {isLoading ? (

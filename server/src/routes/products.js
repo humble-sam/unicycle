@@ -23,7 +23,7 @@ const productValidation = [
 
 // Keyword to category mapping for better search
 const searchKeywordMappings = {
-  // Electronics
+  // Electronics logic refined - removed specific brands to prevent keyword poisoning
   'laptop': 'electronics',
   'laptops': 'electronics',
   'computer': 'electronics',
@@ -31,30 +31,7 @@ const searchKeywordMappings = {
   'macbook': 'electronics',
   'phone': 'electronics',
   'mobile': 'electronics',
-  'iphone': 'electronics',
-  'android': 'electronics',
-  'samsung': 'electronics',
-  'tablet': 'electronics',
-  'ipad': 'electronics',
-  'headphones': 'electronics',
-  'earphones': 'electronics',
-  'earbuds': 'electronics',
-  'airpods': 'electronics',
-  'speaker': 'electronics',
-  'charger': 'electronics',
-  'cable': 'electronics',
-  'mouse': 'electronics',
-  'keyboard': 'electronics',
-  'monitor': 'electronics',
-  'printer': 'electronics',
-  'camera': 'electronics',
-  'calculator': 'electronics',
-  'dell': 'electronics',
-  'hp': 'electronics',
-  'lenovo': 'electronics',
-  'asus': 'electronics',
-  'acer': 'electronics',
-  'inspiron': 'electronics',
+  // Removed brands (dell, hp, etc) to ensure search is irrelevant unless searching for "electronics" explicitly
 
   // Books & Stationary
   'book': 'books-stationary',
@@ -212,9 +189,13 @@ router.get('/', optionalAuth, async (req, res) => {
     if (search) {
       const lowerSearch = search.trim().toLowerCase();
       const searchTerm = `%${search.trim()}%`;
+      const fuzzySearchTerm = `%${search.trim().replace(/\s+/g, '')}%`;
 
-      let searchClause = '(p.title LIKE ? OR p.description LIKE ?';
-      const searchParams = [searchTerm, searchTerm];
+      // Search matches:
+      // 1. Title or Description matches normally
+      // 2. Title matches ignoring spaces (fuzzy search for 'hpvictus')
+      let searchClause = '(p.title LIKE ? OR p.description LIKE ? OR REPLACE(p.title, " ", "") LIKE ?';
+      const searchParams = [searchTerm, searchTerm, fuzzySearchTerm];
 
       // Check if the search term maps to a specific category
       // This helps when users search for "laptop" but the title is "HP Victus" (category: electronics)
@@ -311,12 +292,13 @@ router.get('/:id', optionalAuth, async (req, res) => {
       );
     }
 
-    // Open seller contact info to everyone (per user request)
+    // Open seller contact info ONLY to authenticated users
     const responseData = {
       ...product,
       images: typeof product.images === 'string' ? JSON.parse(product.images) : product.images,
-      seller_phone: product.seller_phone,
-      seller_email: product.seller_email
+      // Privacy Protection: Hide contact info if user is not logged in
+      seller_phone: req.user ? product.seller_phone : null,
+      seller_email: req.user ? product.seller_email : null
     };
 
     res.json(responseData);

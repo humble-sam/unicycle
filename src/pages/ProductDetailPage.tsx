@@ -263,8 +263,8 @@ const ProductDetailPage = () => {
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
                     className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
-                        ? "border-secondary ring-2 ring-secondary/20"
-                        : "border-transparent hover:border-border"
+                      ? "border-secondary ring-2 ring-secondary/20"
+                      : "border-transparent hover:border-border"
                       }`}
                   >
                     <img
@@ -384,7 +384,15 @@ const ProductDetailPage = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {product.seller_phone ? (
+                  {!currentUserId ? (
+                    <Button
+                      className="w-full gap-2"
+                      onClick={() => navigate('/auth')}
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Login to contact seller
+                    </Button>
+                  ) : product.seller_phone ? (
                     <>
                       <Button
                         variant="sell"

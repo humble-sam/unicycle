@@ -194,6 +194,30 @@ try {
   startupErrors.push(`Static file setup error: ${e.message}`);
 }
 
+// 8. Global Error Handler
+// Must be defined with 4 arguments to be recognized as error handler
+app.use((err, req, res, next) => {
+  console.error('[Global Error Handling]', err.message);
+
+  // Handle specific Multer/Upload errors
+  if (err.message && err.message.includes('Invalid file type')) {
+    return res.status(400).json({ error: err.message });
+  }
+
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ error: 'File too large' });
+  }
+
+  // Generic handling
+  // Do not send 500 for expected errors if possible
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  if (!res.headersSent) {
+    res.status(statusCode).json({
+      error: err.message || 'Internal Server Error'
+    });
+  }
+});
+
 // 9. Start Server
 app.listen(PORT, () => {
   console.log(`Ultra-Safe API Server running on port ${PORT}`);

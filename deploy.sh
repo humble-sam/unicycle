@@ -38,15 +38,30 @@ else
     echo "⚠️  Warning: dist/index.html not found. Run build first."
 fi
 
-# 3. Ensure uploads directories exist (CRITICAL: never delete these!)
-# User-uploaded images are stored here and must persist across deployments
-if [ ! -d "uploads" ]; then
-    mkdir -p uploads/products uploads/avatars
-    echo "✅ Created uploads directories"
+# 3. Handle Persistent Storage (Prevents data loss on re-deploy)
+# We store uploads OUTSIDE the repo directory so git clean/reset won't delete them.
+STORAGE_DIR="../storage/uploads"
+
+# Create storage directory if it doesn't exist
+if [ ! -d "$STORAGE_DIR" ]; then
+    mkdir -p "$STORAGE_DIR/products" "$STORAGE_DIR/avatars"
+    echo "✅ Created persistent storage at $STORAGE_DIR"
+fi
+
+# If 'uploads' exists as a real directory (not symlink), migrate data
+if [ -d "uploads" ] && [ ! -L "uploads" ]; then
+    echo "📦 Migrating existing uploads to persistent storage..."
+    cp -r uploads/* "$STORAGE_DIR/" 2>/dev/null || true
+    rm -rf uploads
+    echo "✅ Migrated and removed local uploads folder"
+fi
+
+# Create symlink: uploads -> ../storage/uploads
+if [ ! -L "uploads" ]; then
+    ln -s "$STORAGE_DIR" uploads
+    echo "✅ Created symlink: uploads -> $STORAGE_DIR"
 else
-    # Just ensure subdirectories exist, don't touch existing files
-    mkdir -p uploads/products uploads/avatars
-    echo "✅ Verified uploads directories exist ($(ls uploads/products 2>/dev/null | wc -l) product images)"
+    echo "✅ Uploads symlink already exists"
 fi
 
 # 4. Restart Passenger (touch restart file)

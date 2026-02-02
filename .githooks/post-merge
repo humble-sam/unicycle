@@ -2,7 +2,7 @@
 # Git post-merge hook - runs automatically after git pull
 # This ensures deploy.sh runs after every merge/pull
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [ -f "$SCRIPT_DIR/deploy.sh" ]; then
     echo "📦 Running post-merge deploy..."

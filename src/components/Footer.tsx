@@ -114,7 +114,7 @@ const Footer = () => {
 
         <div className="border-t border-primary-foreground/10 mt-10 pt-8 flex items-center justify-center">
           <p className="text-gray-400 text-sm">
-            &copy; {new Date().getFullYear()} UniCycle. All rights reserved.
+            &copy; {new Date().getFullYear()} UniCycle. All rights reserved. v3
           </p>
         </div>
       </div>

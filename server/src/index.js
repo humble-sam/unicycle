@@ -194,6 +194,19 @@ try {
   startupErrors.push(`Static file setup error: ${e.message}`);
 }
 
+// 8.5 Serve User Uploads (Safe)
+try {
+  const uploadsPath = path.join(path.resolve(__dirname, '../../uploads'));
+  if (fs && fs.existsSync(uploadsPath)) {
+    console.log('Serving uploads from:', uploadsPath);
+    app.use('/uploads', express.static(uploadsPath));
+  } else {
+    console.warn('Uploads directory not found at:', uploadsPath);
+  }
+} catch (e) {
+  console.error(`Uploads serving error: ${e.message}`);
+}
+
 // 8. Global Error Handler
 // Must be defined with 4 arguments to be recognized as error handler
 app.use((err, req, res, next) => {

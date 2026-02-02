@@ -23,7 +23,7 @@ try {
         console.log('No .env file found via relative paths, relying on system env.');
     }
 }
-} catch (e) {
+catch (e) {
     console.error("Env load error:", e.message);
 }
 

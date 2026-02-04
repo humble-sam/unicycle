@@ -10,50 +10,7 @@ import { ArrowLeft, Loader2, Save, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { authApi, profilesApi } from "@/lib/api";
 
-const colleges = [
-  "University of Delhi — Delhi",
-  "University of Mumbai — Mumbai",
-  "Savitribai Phule Pune University — Pune",
-  "University of Calcutta — Kolkata",
-  "University of Madras — Chennai",
-  "Bangalore University — Bengaluru",
-  "Osmania University — Hyderabad",
-  "Chaudhary Charan Singh University — Meerut",
-  "Dr. Bhimrao Ambedkar University — Agra",
-  "University of Rajasthan — Jaipur",
-  "Magadh University — Bodh Gaya",
-  "Patna University — Patna",
-  "Lucknow University — Lucknow",
-  "Banaras Hindu University — Varanasi",
-  "University of Allahabad — Prayagraj",
-  "Ranchi University — Ranchi",
-  "Veer Bahadur Singh Purvanchal University — Jaunpur",
-  "Deen Dayal Upadhyaya Gorakhpur University — Gorakhpur",
-  "Jai Prakash University — Chhapra",
-  "Tilka Manjhi Bhagalpur University — Bhagalpur",
-  "Mahatma Gandhi Kashi Vidyapith — Varanasi",
-  "Utkal University — Bhubaneswar",
-  "Berhampur University — Berhampur",
-  "North Maharashtra University — Jalgaon",
-  "Shivaji University — Kolhapur",
-  "Kakatiya University — Warangal",
-  "Andhra University — Visakhapatnam",
-  "Sri Venkateswara University — Tirupati",
-  "University of Mysore — Mysuru",
-  "Gulbarga University — Kalaburagi",
-  "Dr. Ram Manohar Lohia Avadh University — Ayodhya",
-  "Bundelkhand University — Jhansi",
-  "Chhatrapati Shahu Ji Maharaj University — Kanpur",
-  "Sampurnanand Sanskrit University — Varanasi",
-  "Mahatma Jyotiba Phule Rohilkhand University — Bareilly",
-  "Siddharth University — Kapilvastu (Siddharthnagar)",
-  "Raja Mahendra Pratap Singh State University — Aligarh",
-  "Shakumbhari Devi University — Saharanpur",
-  "Gautam Buddha University — Greater Noida",
-  "Maharaja Suheldev State University — Azamgarh",
-  "Maa Shakumbhari University — Saharanpur",
-  "Other",
-];
+import { COLLEGES } from "@/lib/constants";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -231,7 +188,7 @@ const ProfilePage = () => {
                   className="flex h-11 w-full rounded-lg border-2 border-input bg-background px-4 py-2 text-base transition-all duration-200 focus-visible:outline-none focus-visible:border-secondary focus-visible:ring-2 focus-visible:ring-secondary/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                 >
                   <option value="">Select your college</option>
-                  {colleges.map((college) => (
+                  {COLLEGES.map((college) => (
                     <option key={college} value={college}>
                       {college}
                     </option>

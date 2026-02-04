@@ -29,50 +29,10 @@ import { Link } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
+import { COLLEGES } from "@/lib/constants";
+
 // College list (same as AuthPage)
-const colleges = [
-  "University of Delhi — Delhi",
-  "University of Mumbai — Mumbai",
-  "Savitribai Phule Pune University — Pune",
-  "University of Calcutta — Kolkata",
-  "University of Madras — Chennai",
-  "Bangalore University — Bengaluru",
-  "Osmania University — Hyderabad",
-  "Chaudhary Charan Singh University — Meerut",
-  "Dr. Bhimrao Ambedkar University — Agra",
-  "University of Rajasthan — Jaipur",
-  "Magadh University — Bodh Gaya",
-  "Patna University — Patna",
-  "Lucknow University — Lucknow",
-  "Banaras Hindu University — Varanasi",
-  "University of Allahabad — Prayagraj",
-  "Ranchi University — Ranchi",
-  "Veer Bahadur Singh Purvanchal University — Jaunpur",
-  "Deen Dayal Upadhyaya Gorakhpur University — Gorakhpur",
-  "Jai Prakash University — Chhapra",
-  "Tilka Manjhi Bhagalpur University — Bhagalpur",
-  "Mahatma Gandhi Kashi Vidyapith — Varanasi",
-  "Utkal University — Bhubaneswar",
-  "Berhampur University — Berhampur",
-  "North Maharashtra University — Jalgaon",
-  "Shivaji University — Kolhapur",
-  "Kakatiya University — Warangal",
-  "Andhra University — Visakhapatnam",
-  "Sri Venkateswara University — Tirupati",
-  "University of Mysore — Mysuru",
-  "Gulbarga University — Kalaburagi",
-  "Dr. Ram Manohar Lohia Avadh University — Ayodhya",
-  "Bundelkhand University — Jhansi",
-  "Chhatrapati Shahu Ji Maharaj University — Kanpur",
-  "Sampurnanand Sanskrit University — Varanasi",
-  "Mahatma Jyotiba Phule Rohilkhand University — Bareilly",
-  "Siddharth University — Kapilvastu (Siddharthnagar)",
-  "Raja Mahendra Pratap Singh State University — Aligarh",
-  "Shakumbhari Devi University — Saharanpur",
-  "Gautam Buddha University — Greater Noida",
-  "Maharaja Suheldev State University — Azamgarh",
-  "Maa Shakumbhari University — Saharanpur",
-];
+const colleges = COLLEGES;
 
 interface Ambassador {
   id: string;
@@ -100,7 +60,7 @@ const AmbassadorsPage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     college: "",
@@ -117,10 +77,10 @@ const AmbassadorsPage = () => {
 
   useEffect(() => {
     fetchData();
-    
+
     const session = authApi.getSession();
     setIsLoggedIn(!!session);
-    
+
     if (session) {
       fetchApplicationStatus();
       // Pre-fill name from profile
@@ -184,13 +144,13 @@ const AmbassadorsPage = () => {
   };
 
   const availableColleges = colleges.filter(c => !takenColleges.includes(c));
-  const filteredColleges = availableColleges.filter(c => 
+  const filteredColleges = availableColleges.filter(c =>
     c.toLowerCase().includes(collegeSearch.toLowerCase())
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.college || !formData.full_name || !formData.why_ambassador) {
       toast.error("Please fill in all required fields");
       return;
@@ -239,7 +199,7 @@ const AmbassadorsPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
+
       <main className="flex-1">
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-br from-secondary/20 via-primary/10 to-background py-16 md:py-24">
@@ -254,7 +214,7 @@ const AmbassadorsPage = () => {
                 Campus <span className="text-secondary">Ambassadors</span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed">
-                Be the face of UniCycle at your college. Help fellow students discover 
+                Be the face of UniCycle at your college. Help fellow students discover
                 the smart way to buy and sell on campus.
               </p>
             </div>
@@ -284,7 +244,7 @@ const AmbassadorsPage = () => {
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-foreground mb-4">Our Ambassadors</h2>
               <p className="text-muted-foreground">
-                {ambassadors.length > 0 
+                {ambassadors.length > 0
                   ? `Meet the students leading UniCycle at ${ambassadors.length} ${ambassadors.length === 1 ? 'campus' : 'campuses'}`
                   : "Be the first ambassador at your campus!"
                 }
@@ -298,7 +258,7 @@ const AmbassadorsPage = () => {
             ) : ambassadors.length > 0 ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {ambassadors.map((ambassador) => (
-                  <div 
+                  <div
                     key={ambassador.id}
                     className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg hover:border-secondary/30 transition-all duration-300"
                   >
@@ -327,7 +287,7 @@ const AmbassadorsPage = () => {
                     {(ambassador.social_instagram || ambassador.social_linkedin) && (
                       <div className="flex gap-2 mt-4">
                         {ambassador.social_instagram && (
-                          <a 
+                          <a
                             href={`https://instagram.com/${ambassador.social_instagram}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -337,7 +297,7 @@ const AmbassadorsPage = () => {
                           </a>
                         )}
                         {ambassador.social_linkedin && (
-                          <a 
+                          <a
                             href={ambassador.social_linkedin.startsWith('http') ? ambassador.social_linkedin : `https://linkedin.com/in/${ambassador.social_linkedin}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -371,7 +331,7 @@ const AmbassadorsPage = () => {
                 </div>
                 <h2 className="text-3xl font-bold text-foreground mb-4">Become an Ambassador</h2>
                 <p className="text-muted-foreground">
-                  {availableColleges.length > 0 
+                  {availableColleges.length > 0
                     ? `${availableColleges.length} colleges are waiting for their first ambassador!`
                     : "Check back soon for openings at more colleges."
                   }
@@ -393,7 +353,7 @@ const AmbassadorsPage = () => {
                     Your application for {applicationStatus.application?.college} is{' '}
                     <Badge variant={
                       applicationStatus.application?.status === 'approved' ? 'default' :
-                      applicationStatus.application?.status === 'rejected' ? 'destructive' : 'secondary'
+                        applicationStatus.application?.status === 'rejected' ? 'destructive' : 'secondary'
                     }>
                       {applicationStatus.application?.status}
                     </Badge>
@@ -454,7 +414,7 @@ const AmbassadorsPage = () => {
                             ))
                           ) : (
                             <div className="px-4 py-3 text-sm text-muted-foreground">
-                              {takenColleges.includes(collegeSearch) 
+                              {takenColleges.includes(collegeSearch)
                                 ? "This college already has an ambassador"
                                 : "No matching colleges found"
                               }
@@ -567,17 +527,17 @@ const AmbassadorsPage = () => {
 
                   {/* Submit */}
                   <div className="flex gap-4 pt-4">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setShowForm(false)}
                       disabled={submitting}
                       className="flex-1"
                     >
                       Cancel
                     </Button>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={submitting}
                       className="flex-1"
                     >
